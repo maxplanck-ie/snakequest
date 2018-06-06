@@ -37,7 +37,7 @@ server <- function(input, output, session) {
        require("sendmailR",lib.loc=Rlib)
 
         values <- reactiveValues()  
-        values$datdir<-c()
+        values$datdir<-c("")
         observeEvent(input$adddataset, {
       
         
@@ -93,17 +93,17 @@ server <- function(input, output, session) {
           analysisName<-isolate(input$analysistitle)
           values$ranstring<-stri_rand_strings(n=1,length=8)
           
-          sampleInfo<-isolate(values[["DF"]])
+          sampleInfo<-isolate(values$DF)
           sampleInfo<-sampleInfo[!sampleInfo$Group %in% "NA",]
           
           #update read1 and read2 stored in reactive values
           if (values$ispaired){
-            values$Read1<-sampleInfo$Read1
-            values$Read2<-sampleInfo$Read2
-            values$Reads<-c(values$Read1,values$Read2)
+            vRead1<-sampleInfo$Read1
+            vRead2<-gsub("_R1.fastq.gz","_R2.fastq.gz",sampleInfo$Read1)
+            values$Reads<-c(vRead1,vRead2)
           } else {
-            values$Read1<-sampleInfo$Read1
-            values$Reads<-values$Read1
+            vRead1<-sampleInfo$Read1
+            values$Reads<-vRead1
           }
           
           rownames(sampleInfo)<-sampleInfo$SampleID
@@ -123,7 +123,7 @@ server <- function(input, output, session) {
            )})
            path_to_exec<-paste0("/data/manke/sikora/snakepipes/workflows/",values$inWorkflow,"/",values$inWorkflow)###add version selection
            indir<-sprintf("/data/processing/bioinfo-core/%s/%s_input_reads",inGroup,input$analysistitle,values$ranstring,values$inWorkflow)
-           link_cmd<- paste0("ln -t ",indir,' -s ')
+           link_cmd<- paste0("ln -t ",indir,' -s ',paste(values$Reads,collapse=" "))
            outdir<-sprintf("/data/processing/bioinfo-core/%s/%s_%s_%s_OUT",inGroup,input$analysistitle,values$ranstring,values$inWorkflow)
            genome_sel<-c("Zebrafish"="GRCz10","Fission yeast"="SchizoSPombe_ASM294v2","Fruitfly"="dm6","Human"="hs37d5","Mouse"="mm10")             
            output$from<-renderUI({textInput(inputId="sender",label="Your email address",placeholder="lastname@ie-freiburg.mpg.de")})
