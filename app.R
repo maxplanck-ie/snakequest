@@ -37,7 +37,8 @@ server <- function(input, output, session) {
        require("sendmailR",lib.loc=Rlib)
 
         values <- reactiveValues()  
-        values$datdir<-c("")
+        values$datdir<-c()
+        values$sInfoDest<-""
         observeEvent(input$adddataset, {
       
         
@@ -46,10 +47,12 @@ server <- function(input, output, session) {
             inOwner<-isolate(input$owner)
             inProjectID<-isolate(input$projectid)
 
-            values$datdir<-c(values$datdir,system(sprintf("find /data/%s/sequencing_data -name Project_%s_%s_%s -type d | sort",tolower(inGroup),inProjectID,inOwner,inGroup),intern=TRUE)) }
+            values$datdir<-c(values$datdir,system(sprintf("find /data/%s/sequencing_data -name Project_%s_%s_%s -type d | sort",tolower(inGroup),inProjectID,inOwner,inGroup),intern=TRUE)) 
+        }
+            
         else if ((input$group=="")&(input$owner=="")&(input$projectid=="")&(input$pathtodata!="")){
             values$datdir<-c(values$datdir,isolate(input$pathtodata))
-        }  
+                }  
             #handle single and paired end data ###allow for multiple sequencing runs
             values$datPath<-dir(values$datdir,pattern="*.fastq.gz",full.names=TRUE,recursive=TRUE)
             #get rid of optical duplicates
@@ -90,7 +93,7 @@ server <- function(input, output, session) {
 
         
       observeEvent(input$savetable, {
-          analysisName<-isolate(input$analysistitle)
+          values$analysisName<-isolate(input$analysistitle)
           values$ranstring<-stri_rand_strings(n=1,length=8)
           
           sampleInfo<-isolate(values$DF)
@@ -107,24 +110,30 @@ server <- function(input, output, session) {
           }
           
           rownames(sampleInfo)<-sampleInfo$SampleID
-          values$sInfoDest<-sprintf("/data/manke/group/shiny/snakepipes_input/%s_%s_sampleSheet.tsv",values$ranstring,analysisName)
+          values$sInfoDest<-sprintf("/data/manke/group/shiny/snakepipes_input/%s_%s_sampleSheet.tsv",values$ranstring,values$analysisName)
           
           write.table(sampleInfo,file=values$sInfoDest,sep="\t",quote=FALSE)
           output$sIsaved<-renderText("Sample sheet saved.")
           
                   })#end of observe input$savetable
+      
+      output$configurator<-renderUI({tagList(
+        selectInput(inputId="genome", label="Select organism", choices=c("Zebrafish","Fission yeast","Fruitfly","Human","Mouse"), selected = NULL),
+        selectInput(inputId="version", label="Select workflow version", choices=c("Placeholder"), selected = "Placeholder")
+      )})
        
        
    observe({input$selectworkflow
            values$inWorkflow<-input$selectworkflow
-           output$configurator<-renderUI({tagList(
-             selectInput(inputId="genome", label="Select organism", choices=c("Zebrafish","Fission yeast","Fruitfly","Human","Mouse"), selected = NULL),
-             selectInput(inputId="version", label="Select workflow version", choices=c("Placeholder"), selected = "Placeholder")
-           )})
+           
            path_to_exec<-paste0("/data/manke/sikora/snakepipes/workflows/",values$inWorkflow,"/",values$inWorkflow)###add version selection
            indir<-sprintf("/data/processing/bioinfo-core/%s/%s_input_reads",inGroup,input$analysistitle,values$ranstring,values$inWorkflow)
            link_cmd<- paste0("ln -t ",indir,' -s ',paste(values$Reads,collapse=" "))
+           
            outdir<-sprintf("/data/processing/bioinfo-core/%s/%s_%s_%s_OUT",inGroup,input$analysistitle,values$ranstring,values$inWorkflow)
+           
+           cp_sInfo_cmd<-sprintf("cp -v %s %s",values$sInfoDest,indir)
+           values$sInfo_in<-paste0(indir,"/",basename(values$sInfoDest))
            genome_sel<-c("Zebrafish"="GRCz10","Fission yeast"="SchizoSPombe_ASM294v2","Fruitfly"="dm6","Human"="hs37d5","Mouse"="mm10")             
            output$from<-renderUI({textInput(inputId="sender",label="Your email address",placeholder="lastname@ie-freiburg.mpg.de")})
            output$freetext<-renderUI({textInput(inputId="comments",label="Your message to the bioinfo facility",placeholder="I can't find my data.",width="600px")})
@@ -134,14 +143,14 @@ server <- function(input, output, session) {
            
            if(values$inWorkflow=="ATAC-seq"){
                
-              values$command<-sprintf("mkdir -p %s ; %s ; %s -i %s -o %s %s ; %s -d %s --DOC %s %s ",indir,link_cmd,path_to_DNA_mapping,indir,outdir,genome_sel[input$genome],path_to_exec,outdir,values$sInfoDest,genome_sel[input$genome])
+              values$command<-sprintf("mkdir -p %s ; %s ; %s ;%s -i %s -o %s %s ; %s -d %s --DOC %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_DNA_mapping,indir,outdir,genome_sel[input$genome],path_to_exec,outdir,values$sInfo_in,genome_sel[input$genome])
               output$command<-renderText({ values$command })
               
                      }##end of ATACseq
            
            else if(values$inWorkflow=="ChIP-seq"){
              
-             values$command<-sprintf("mkdir -p %s ; %s ; %s -i %s -o %s %s ; %s -d %s --DB %s %s",indir,link_cmd,path_to_DNA_mapping,indir,outdir,genome_sel[input$genome],path_to_exec,outdir,values$sInfoDest,genome_sel[input$genome]) ##missing: samples.yaml after genome
+             values$command<-sprintf("mkdir -p %s ; %s  ; %s ; %s -i %s -o %s %s ; %s -d %s --DB %s %s",indir,link_cmd,cp_sInfo_cmd,path_to_DNA_mapping,indir,outdir,genome_sel[input$genome],path_to_exec,outdir,values$sInfo_in,genome_sel[input$genome]) ##missing: samples.yaml after genome
              output$command<-renderText({ values$command })
 
            }##end of ChIP-seq
@@ -149,7 +158,7 @@ server <- function(input, output, session) {
            
            else if(values$inWorkflow=="HiC"){
              
-             values$command<-sprintf("mkdir -p %s ; %s ; %s -i %s -o %s %s ; %s -i %s -o %s %s",indir,link_cmd,path_to_DNA_mapping,indir,outdir,genome_sel[input$genome],path_to_exec,indir,outdir,genome_sel[input$genome]) 
+             values$command<-sprintf("mkdir -p %s ; %s ;  %s ; %s -i %s -o %s %s ; %s -i %s -o %s %s",indir,link_cmd,cp_sInfo_cmd,path_to_DNA_mapping,indir,outdir,genome_sel[input$genome],path_to_exec,indir,outdir,genome_sel[input$genome]) 
              output$command<-renderText({ values$command })
              
            }##end of HiC
@@ -157,21 +166,21 @@ server <- function(input, output, session) {
            
            else if(values$inWorkflow=="DNA-mapping"){
              
-             values$command<-sprintf("mkdir -p %s ; %s ; %s -i %s -o %s %s ",indir,link_cmd,path_to_DNA_mapping,indir,outdir,genome_sel[input$genome]) 
+             values$command<-sprintf("mkdir -p %s ; %s ;  %s ; %s -i %s -o %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_DNA_mapping,indir,outdir,genome_sel[input$genome]) 
              output$command<-renderText({ values$command })
              
            } #end of DNA-mapping
            
            else if(values$inWorkflow=="RNA-seq"){
              
-             values$command<-sprintf("mkdir -p %s ; %s ; %s -i %s -o %s --DE %s %s ",indir,link_cmd,path_to_exec,indir,outdir,values$sInfoDest,genome_sel[input$genome]) 
+             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s -i %s -o %s --DE %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,genome_sel[input$genome]) 
              output$command<-renderText({ values$command })
              
            } #end of RNA-seq
            
            else if(values$inWorkflow=="WGBS"){
              
-             values$command<-sprintf("mkdir -p %s ; %s ; %s -ri %s -w %s --sampleInfo %s %s ",indir,link_cmd,path_to_exec,indir,outdir,values$sInfoDest,genome_sel[input$genome]) 
+             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s -ri %s -w %s --sampleInfo %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,genome_sel[input$genome]) 
              output$command<-renderText({ values$command })
              
            }
@@ -181,12 +190,18 @@ server <- function(input, output, session) {
       })#end of observe input$selectworkflow 
      
              observeEvent(input$savesubmit, {
+               bshscript<-sprintf("/data/manke/group/shiny/snakepipes_input/%s_%s_script.sh",values$ranstring,values$analysisName)
+               fileConn<-file(bshscript)
+               shebang<-"#!/bin/bash"
+               exports<-"export PATH=/data/processing/conda/bin:$PATH"
+               writeLines(c(shebang,exports,unlist(strsplit(isolate(values$command),split=";"))), fileConn)
+               close(fileConn)
                cc<-isolate(input$sender)
                from<-sprintf("<sendmailR@@\\%s>", Sys.info()[4])
                to<-"<sikora@ie-freiburg.mpg.de>"  ##change to "bioinfo-core@ie-freiburg.mpg.de"
                subject<-paste0("Analysis request ",isolate(input$analysistitle), "_" ,isolate(values$ranstring))
-               msg <- paste0(cc," has requested the following analysis: \n \n", isolate(values$command),  " \n \n User comments: /n /n" ,isolate(input$comments),"\n \n End of message.")
-               sendmail(from=sprintf("<%s>",from), to=to, subject=subject, msg=msg,cc=sprintf("<%s>",cc))
+               msg <- gsub(";","\n \n",paste0(cc," has requested the following analysis: \n \n", isolate(values$command),  " \n \n User comments: \n \n" ,isolate(input$comments),"\n \n Please review the input files and the attached sample sheet before proceeding. Consider treating batch effect if pooling data across sequencing project, especially in case of RNAseq. \n \n End of message."))
+               sendmail(from=sprintf("<%s>",from), to=to, subject=subject, msg=list(msg,mime_part(isolate(values$sInfoDest)),mime_part(bshscript)),cc=sprintf("<%s>",cc))
                output$eSent<-renderText("Your request has been sent to the MPI-IE Bioinfo facility. A copy was sent to your email address.")
 
                
