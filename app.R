@@ -35,10 +35,28 @@ server <- function(input, output, session) {
        require("yaml",lib.loc=Rlib)
        require("stringi",lib.loc=Rlib)
        require("sendmailR",lib.loc=Rlib)
+  
+       sInfoTOyaml<-function(df){
+         df2<-df[!df$ChIPgroup %in% "Input",!colnames(df) %in% c("Group","Read1","SampleID","ChIPgroup")]
+         df2$MatchedInput<-as.character(df2$MatchedInput)
+         df2$MatchedInput<-paste0("control: ",df2$MatchedInput)
+         df2$MarkWidth<-as.character(df2$MarkWidth)
+         df2$MarkWidth[grep("Broad",df2$MarkWidth)]<-noquote("broad: True")
+         df2$MarkWidth[grep("Narrow",df2$MarkWidth)]<-noquote("broad: False")
+         df3<-as.data.frame(t(df2),stringsAsFactors=FALSE)
+         l3<-list(df3)
+         names(l3)<-"chip_dict"
+         l3y<-as.yaml(l3,omap=TRUE)
+         l3ymod<-gsub("'","",gsub("- ","",gsub("!omap","",l3y)))
+         l4<-yaml.load(l3ymod)
+         return(l4)
+       }
+  
 
         values <- reactiveValues()  
         values$datdir<-c()
         values$sInfoDest<-""
+        values$chDictDest<-""
         observeEvent(input$adddataset, {
       
         
@@ -79,7 +97,7 @@ server <- function(input, output, session) {
         
         observe({
               input$adddataset
-              values$DF<-data.frame(SampleID=values$datshort,Group=(rep("NA",(length(values$datshort)))),Read1=values$Read1,stringsAsFactors = F)
+              values$DF<-data.frame(SampleID=values$datshort,Group=(rep("NA",(length(values$datshort)))),Read1=values$Read1,ChIPgroup=factor(rep("NA",(length(values$datshort))),levels=c("ChIP","Input"),ordered=TRUE),MatchedInput=factor(rep("NA",(length(values$datshort))),levels=values$datshort,ordered=TRUE),MarkWidth=factor(rep("NA",(length(values$datshort))),levels=c("Broad","Narrow"),ordered=TRUE),stringsAsFactors = F)
         })
             
         observe({
@@ -98,6 +116,15 @@ server <- function(input, output, session) {
           
           sampleInfo<-isolate(values$DF)
           sampleInfo<-sampleInfo[!sampleInfo$Group %in% "NA",]
+          rownames(sampleInfo)<-sampleInfo$SampleID
+          
+          ###check if ChiPGroup is filled, if yes, create a yaml
+          if(sum(is.na(sampleInfo$ChIPgroup)<1)){
+          chip_dict<-sInfoTOyaml(sampleInfo)
+          values$chDictDest<-sprintf("/data/manke/group/shiny/snakepipes_input/%s_%s_samples.yaml",values$ranstring,values$analysisName)
+          write_yaml(noquote(chip_dict),file=isolate(values$chDictDest))
+          
+          }
           
           #update read1 and read2 stored in reactive values
           if (values$ispaired){
@@ -109,7 +136,7 @@ server <- function(input, output, session) {
             values$Reads<-vRead1
           }
           
-          rownames(sampleInfo)<-sampleInfo$SampleID
+          
           values$sInfoDest<-sprintf("/data/manke/group/shiny/snakepipes_input/%s_%s_sampleSheet.tsv",values$ranstring,values$analysisName)
           
           write.table(sampleInfo,file=values$sInfoDest,sep="\t",quote=FALSE)
@@ -127,7 +154,7 @@ server <- function(input, output, session) {
            values$inWorkflow<-input$selectworkflow
            
            path_to_exec<-paste0("/data/manke/sikora/snakepipes/workflows/",values$inWorkflow,"/",values$inWorkflow)###add version selection
-           indir<-sprintf("/data/processing/bioinfo-core/%s/%s_input_reads",inGroup,input$analysistitle,values$ranstring,values$inWorkflow)
+           indir<-sprintf("/data/processing/bioinfo-core/%s/%s_%s_%s_input_reads",inGroup,input$analysistitle,values$ranstring,values$inWorkflow)
            link_cmd<- paste0("ln -t ",indir,' -s ',paste(values$Reads,collapse=" "))
            
            outdir<-sprintf("/data/processing/bioinfo-core/%s/%s_%s_%s_OUT",inGroup,input$analysistitle,values$ranstring,values$inWorkflow)
@@ -150,9 +177,13 @@ server <- function(input, output, session) {
            
            else if(values$inWorkflow=="ChIP-seq"){
              
-             values$command<-sprintf("mkdir -p %s ; %s  ; %s ; %s -i %s -o %s %s ; %s -d %s --DB %s %s",indir,link_cmd,cp_sInfo_cmd,path_to_DNA_mapping,indir,outdir,genome_sel[input$genome],path_to_exec,outdir,values$sInfo_in,genome_sel[input$genome]) ##missing: samples.yaml after genome
+             cp_chDict_cmd<-sprintf("cp -v %s %s",values$chDictDest,indir)
+             values$chDictr_in<-paste0(indir,"/",basename(values$chDictDest))
+             
+             values$command<-sprintf("mkdir -p %s ; %s  ; %s ; %s ; %s -i %s -o %s %s ; %s -d %s --DB %s %s %s",indir,link_cmd,cp_sInfo_cmd,cp_chDict_cmd,path_to_DNA_mapping,indir,outdir,genome_sel[input$genome],path_to_exec,outdir,values$sInfo_in,genome_sel[input$genome],values$chDictr_in) 
              output$command<-renderText({ values$command })
-
+             
+             
            }##end of ChIP-seq
            
            
@@ -201,7 +232,11 @@ server <- function(input, output, session) {
                to<-"<sikora@ie-freiburg.mpg.de>"  ##change to "bioinfo-core@ie-freiburg.mpg.de"
                subject<-paste0("Analysis request ",isolate(input$analysistitle), "_" ,isolate(values$ranstring))
                msg <- gsub(";","\n \n",paste0(cc," has requested the following analysis: \n \n", isolate(values$command),  " \n \n User comments: \n \n" ,isolate(input$comments),"\n \n Please review the input files and the attached sample sheet before proceeding. Consider treating batch effect if pooling data across sequencing project, especially in case of RNAseq. \n \n End of message."))
-               sendmail(from=sprintf("<%s>",from), to=to, subject=subject, msg=list(msg,mime_part(isolate(values$sInfoDest)),mime_part(bshscript)),cc=sprintf("<%s>",cc))
+               if(values$inWorkflow=="ChIP-seq"){
+                 sendmail(from=sprintf("<%s>",from), to=to, subject=subject, msg=list(msg,mime_part(isolate(values$sInfoDest)),mime_part(isolate(values$chDictDest)),mime_part(bshscript)),cc=sprintf("<%s>",cc))
+               }
+               else{
+               sendmail(from=sprintf("<%s>",from), to=to, subject=subject, msg=list(msg,mime_part(isolate(values$sInfoDest)),mime_part(bshscript)),cc=sprintf("<%s>",cc))}
                output$eSent<-renderText("Your request has been sent to the MPI-IE Bioinfo facility. A copy was sent to your email address.")
 
                
