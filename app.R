@@ -17,8 +17,8 @@ ui <- function(request) {dashboardPage(
         actionButton(inputId="adddataset", label="Add dataset"),
         selectInput(inputId="selectworkflow",label="Select NGS workflow",choices=c("ATAC-seq","ChIP-seq","DNA-mapping","HiC","RNA-seq","WGBS")),
         textInput(inputId="analysistitle", label="Analysis title", value = "", width = NULL, placeholder = NULL),
-        imageOutput("logo")
-        
+        imageOutput("logo"),
+        tags$footer("Copyright 2018 MPI-IE Freiburg Bioinfo Core Unit")
         ),
         
     dashboardBody(
@@ -90,7 +90,10 @@ server <- function(input, output, session) {
                  values$Read1<-grep("*_R1.fastq.gz",values$datPath,value=TRUE)
                  output$Read1<-renderText(values$Read1)
                  values$datshort<-gsub(".fastq.gz","",basename(values$datPath))}
-            if(length(unique(values$datshort))<length(values$datshort)){output$datawarnings<-renderText("Warning! Your dataset contains multiple instances of identically named samples! If these are resequenced samples, consider merging them before continuing with the analysis or exclude them by leaving NAs in the Group column. Otherwise they will be treated as replicates.")}else{output$datawarnings<-renderText("All sample names are unique. Proceed with the analysis.")}
+            if(length(unique(values$datshort))<length(values$datshort)){
+                values$datwarnings<-"Warning! Your dataset contains multiple instances of identically named samples! If these are resequenced samples, consider merging them before continuing with the analysis or exclude them by leaving NAs in the Group column. Otherwise they will be treated as replicates."
+            }else{values$datwarnings<-"All sample names are unique. Proceed with the analysis."}
+            output$datawarnings<-renderText(values$datwarnings)
         },ignoreInit=TRUE)#end of observe input$adddataset
 
             ###############initiate reactive table to collect sample information ###############
@@ -112,12 +115,24 @@ server <- function(input, output, session) {
 
         
       observeEvent(input$savetable, {
-          values$analysisName<-isolate(input$analysistitle)
+          values$analysisName<-gsub("[^[:alnum:]]", "_", isolate(input$analysistitle))
           values$ranstring<-stri_rand_strings(n=1,length=8)
           
           sampleInfo<-isolate(values$DF)
           sampleInfo<-sampleInfo[!sampleInfo$Group %in% "NA",]
           rownames(sampleInfo)<-sampleInfo$SampleID
+          
+          ###check for replicates, else issue a warning
+          gl<-min(ave(1:nrow(sampleInfo),sampleInfo$Group,FUN=length))
+          if(gl==1){
+            values$datwarnings<-c(values$datwarnings,"SOME SAMPLE GROUPS DON'T HAVE REPLICATES!!!")
+          }
+          else if (gl==2){
+            values$datwarnings<-c(values$datwarnings,"Some of your sample groups have only 2 replicates. This might be suboptimal for some analyses and lead to higher FDR.")
+          }
+          else if (gl==3){
+            values$datwarnings<-c(values$datwarnings,"All sample groups have at least 3 replicates.")
+          }
           
           ###check if ChiPGroup is filled, if yes, create a yaml
           if(sum(is.na(sampleInfo$ChIPgroup)<1)){
@@ -164,8 +179,8 @@ server <- function(input, output, session) {
            values$sInfo_in<-paste0(indir,"/",basename(values$sInfoDest))
            genome_sel<-c("Zebrafish"="GRCz10","Fission yeast"="SchizoSPombe_ASM294v2","Fruitfly"="dm6","Human"="hs37d5","Mouse"="mm10")             
            output$from<-renderUI({textInput(inputId="sender",label="Your email address",placeholder="lastname@ie-freiburg.mpg.de")})
-           output$freetext<-renderUI({textInput(inputId="comments",label="Your message to the bioinfo facility",placeholder="I can't find my data.",width="600px")})
-           output$freetext<-renderUI({textInput(inputId="comments",label="Your message to the bioinfo facility",placeholder="I can't find my data.",width="600px")})
+           output$freetext<-renderUI({textInput(inputId="comments",label="Your message to the bioinfo facility",placeholder="Sample X might be an outlier.",width="600px")})
+          
            path_to_DNA_mapping<-paste0("/data/manke/sikora/snakepipes/workflows/DNA-mapping/DNA-mapping")
            
            
@@ -246,7 +261,7 @@ server <- function(input, output, session) {
  
 ###################################################################################
              
-        output$logo<-renderImage({list(src="/data/manke/sikora/shiny_apps/userIN_to_yaml/MPIIE_logo_sRGB.jpg",width=200,height=200)},deleteFile =FALSE)
+        output$logo<-renderImage({list(src="/data/manke/sikora/shiny_apps/userIN_to_yaml/MPIIE_logo_sRGB.jpg",width=100,height=100)},deleteFile =FALSE)
              
 
         output$resultPanels<-renderUI({myTabs<-list(tabPanel(title="Input Data",
