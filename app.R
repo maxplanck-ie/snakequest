@@ -16,7 +16,8 @@ ui <- function(request) {dashboardPage(
         textInput(inputId="pathtodata", label="Data folder", value = "", width = NULL, placeholder = NULL),
         actionButton(inputId="adddataset", label="Add dataset"),
         selectInput(inputId="selectworkflow",label="Select NGS workflow",choices=c("ATAC-seq","ChIP-seq","DNA-mapping","HiC","RNA-seq","WGBS")),
-        textInput(inputId="analysistitle", label="Analysis title", value = "", width = NULL, placeholder = NULL)
+        textInput(inputId="analysistitle", label="Analysis title", value = "", width = NULL, placeholder = NULL),
+        imageOutput("logo")
         
         ),
         
@@ -31,7 +32,7 @@ ui <- function(request) {dashboardPage(
 
 
 server <- function(input, output, session) {
-        
+  
        require("yaml",lib.loc=Rlib)
        require("stringi",lib.loc=Rlib)
        require("sendmailR",lib.loc=Rlib)
@@ -244,6 +245,9 @@ server <- function(input, output, session) {
              
  
 ###################################################################################
+             
+        output$logo<-renderImage({list(src="/data/manke/sikora/shiny_apps/userIN_to_yaml/MPIIE_logo_sRGB.jpg",width=200,height=200)},deleteFile =FALSE)
+             
 
         output$resultPanels<-renderUI({myTabs<-list(tabPanel(title="Input Data",
                                                       fluidPage(
