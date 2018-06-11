@@ -101,7 +101,7 @@ server <- function(input, output, session) {
         
         observe({
               input$adddataset
-              values$DF<-data.frame(SampleID=values$datshort,Group=(rep("NA",(length(values$datshort)))),Read1=values$Read1,ChIPgroup=factor(rep("NA",(length(values$datshort))),levels=c("ChIP","Input"),ordered=TRUE),MatchedInput=factor(rep("NA",(length(values$datshort))),levels=values$datshort,ordered=TRUE),MarkWidth=factor(rep("NA",(length(values$datshort))),levels=c("Broad","Narrow"),ordered=TRUE),stringsAsFactors = F)
+              values$DF<-data.frame(SampleID=values$datshort,Group=(rep("NA",(length(values$datshort)))),Read1=values$Read1,ChIPgroup=factor(rep("NA",(length(values$datshort))),levels=c("ChIP","Input"),ordered=TRUE),MatchedInput=factor(rep("NA",(length(values$datshort))),levels=unique(values$datshort),ordered=TRUE),MarkWidth=factor(rep("NA",(length(values$datshort))),levels=c("Broad","Narrow"),ordered=TRUE),stringsAsFactors = F)
         })
             
         observe({
@@ -168,12 +168,13 @@ server <- function(input, output, session) {
        
    observe({input$selectworkflow
            values$inWorkflow<-input$selectworkflow
+           values$inGroup<-input$group
            
            path_to_exec<-paste0("/data/manke/sikora/snakepipes/workflows/",values$inWorkflow,"/",values$inWorkflow)###add version selection
-           indir<-sprintf("/data/processing/bioinfo-core/%s/%s_%s_%s_input_reads",inGroup,input$analysistitle,values$ranstring,values$inWorkflow)
+           indir<-sprintf("/data/processing/bioinfo-core/%s/%s_%s_%s_input_reads",values$inGroup,values$analysisName,values$ranstring,values$inWorkflow)
            link_cmd<- paste0("ln -t ",indir,' -s ',paste(values$Reads,collapse=" "))
            
-           outdir<-sprintf("/data/processing/bioinfo-core/%s/%s_%s_%s_OUT",inGroup,input$analysistitle,values$ranstring,values$inWorkflow)
+           outdir<-sprintf("/data/processing/bioinfo-core/%s/%s_%s_%s_OUT",values$inGroup,values$analysisName,values$ranstring,values$inWorkflow)
            
            cp_sInfo_cmd<-sprintf("cp -v %s %s",values$sInfoDest,indir)
            values$sInfo_in<-paste0(indir,"/",basename(values$sInfoDest))
