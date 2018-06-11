@@ -1,9 +1,9 @@
 ## app.R ##
 Rlib="/data/boehm/group/shiny_apps/Rlibs3.4.0"
 
-require(shiny,lib.loc=Rlib)
-require(shinydashboard,lib.loc=Rlib)
-require(rhandsontable,lib.loc=Rlib)
+library(shiny,lib.loc=Rlib)
+library(shinydashboard,lib.loc=Rlib)
+library(rhandsontable,lib.loc=Rlib)
 
 ui <- function(request) {dashboardPage(
     dashboardHeader(title = "Dataset selection"),
@@ -33,9 +33,9 @@ ui <- function(request) {dashboardPage(
 
 server <- function(input, output, session) {
   
-       require("yaml",lib.loc=Rlib)
-       require("stringi",lib.loc=Rlib)
-       require("sendmailR",lib.loc=Rlib)
+       library("yaml",lib.loc=Rlib)
+       library("stringi",lib.loc=Rlib)
+       library("sendmailR",lib.loc=Rlib)
   
        sInfoTOyaml<-function(df){
          df2<-df[!df$ChIPgroup %in% "Input",!colnames(df) %in% c("Group","Read1","SampleID","ChIPgroup")]
