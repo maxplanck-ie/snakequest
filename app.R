@@ -114,7 +114,8 @@ server <- function(input, output, session) {
            
            cp_sInfo_cmd<-sprintf("cp -v %s %s",values$sInfoDest,indir)
            values$sInfo_in<-paste0(indir,"/",basename(values$sInfoDest))
-           genome_sel<-c("Zebrafish"="GRCz10","Fission yeast"="SchizoSPombe_ASM294v2","Fruitfly"="dm6","Human"="hs37d5","Mouse"="mm10")             
+           genome_sel<-c("Zebrafish"="GRCz10","Fission yeast"="SchizoSPombe_ASM294v2","Fruitfly"="dm6","Human"="hs37d5","Mouse"="mm10")  
+           values$genome<-genome_sel[input$genome]
            output$from<-renderUI({textInput(inputId="sender",label="Your email address",placeholder="lastname@ie-freiburg.mpg.de")})
            output$freetext<-renderUI({textInput(inputId="comments",label="Your message to the bioinfo facility",placeholder="Sample X might be an outlier.",width="600px")})
           
@@ -123,7 +124,7 @@ server <- function(input, output, session) {
            
            if(values$inWorkflow=="ATAC-seq"){
                
-              values$command<-sprintf("mkdir -p %s ; %s ; %s ;%s -i %s -o %s %s ; %s -d %s --DOC %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_DNA_mapping,indir,outdir,genome_sel[input$genome],path_to_exec,outdir,values$sInfo_in,genome_sel[input$genome])
+              values$command<-sprintf("mkdir -p %s ; %s ; %s ;%s -i %s -o %s %s ; %s -d %s --DOC %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_DNA_mapping,indir,outdir,values$genome,path_to_exec,outdir,values$sInfo_in,values$genome)
               output$command<-renderText({ values$command })
               
                      }##end of ATACseq
@@ -133,7 +134,7 @@ server <- function(input, output, session) {
              cp_chDict_cmd<-sprintf("cp -v %s %s",values$chDictDest,indir)
              values$chDictr_in<-paste0(indir,"/",basename(values$chDictDest))
              
-             values$command<-sprintf("mkdir -p %s ; %s  ; %s ; %s ; %s -i %s -o %s %s ; %s -d %s --DB %s %s %s",indir,link_cmd,cp_sInfo_cmd,cp_chDict_cmd,path_to_DNA_mapping,indir,outdir,genome_sel[input$genome],path_to_exec,outdir,values$sInfo_in,genome_sel[input$genome],values$chDictr_in) 
+             values$command<-sprintf("mkdir -p %s ; %s  ; %s ; %s ; %s -i %s -o %s %s ; %s -d %s --DB %s %s %s",indir,link_cmd,cp_sInfo_cmd,cp_chDict_cmd,path_to_DNA_mapping,indir,outdir,values$genome,path_to_exec,outdir,values$sInfo_in,values$genome,values$chDictr_in) 
              output$command<-renderText({ values$command })
              
              
@@ -142,7 +143,7 @@ server <- function(input, output, session) {
            
            else if(values$inWorkflow=="HiC"){
              
-             values$command<-sprintf("mkdir -p %s ; %s ;  %s ; %s -i %s -o %s %s ; %s -i %s -o %s %s",indir,link_cmd,cp_sInfo_cmd,path_to_DNA_mapping,indir,outdir,genome_sel[input$genome],path_to_exec,indir,outdir,genome_sel[input$genome]) 
+             values$command<-sprintf("mkdir -p %s ; %s ;  %s ; %s -i %s -o %s %s ; %s -i %s -o %s %s",indir,link_cmd,cp_sInfo_cmd,path_to_DNA_mapping,indir,outdir,values$genome,path_to_exec,indir,outdir,values$genome) 
              output$command<-renderText({ values$command })
              
            }##end of HiC
@@ -150,34 +151,34 @@ server <- function(input, output, session) {
            
            else if(values$inWorkflow=="DNA-mapping"){
              
-             values$command<-sprintf("mkdir -p %s ; %s ;  %s ; %s -i %s -o %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_DNA_mapping,indir,outdir,genome_sel[input$genome]) 
+             values$command<-sprintf("mkdir -p %s ; %s ;  %s ; %s -i %s -o %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_DNA_mapping,indir,outdir,values$genome) 
              output$command<-renderText({ values$command })
              
            } #end of DNA-mapping
            
            else if(values$inWorkflow=="RNA-seq"){
              
-             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s -i %s -o %s --DE %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,genome_sel[input$genome]) 
+             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s -i %s -o %s --DE %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,values$genome) 
              output$command<-renderText({ values$command })
              
            } #end of RNA-seq
            
            else if(values$inWorkflow=="WGBS"){
              
-             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s -ri %s -w %s --sampleInfo %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,genome_sel[input$genome]) 
+             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s -ri %s -w %s --sampleInfo %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,values$genome) 
              output$command<-renderText({ values$command })
              
            } #end of WGBS
 
 
-        observe({
-              input$adddataset
-              input$selectworkflow
+        #observe({
+        #      input$adddataset
+        #      input$selectworkflow
               
-              if(values$inWorkflow=="ChIPseq"){
+              if(values$inWorkflow=="ChIP-seq"){
               values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment"))),Read1=values$Read1,ChIPgroup=factor(rep("NA",(length(values$datshort))),levels=c("ChIP","Input"),ordered=TRUE),MatchedInput=factor(rep("NA",(length(values$datshort))),levels=unique(values$datshort),ordered=TRUE),MarkWidth=factor(rep("NA",(length(values$datshort))),levels=c("Broad","Narrow"),ordered=TRUE),stringsAsFactors = F)} 
 
-              if(values$inWorkflow=="HiC"){
+              else if(values$inWorkflow=="HiC"){
               values$DF<-data.frame(SampleID=values$datshort,Group=(rep("NA",(length(values$datshort)))),Read1=values$Read1,stringsAsFactors = F)}
 
 
@@ -186,7 +187,8 @@ server <- function(input, output, session) {
                values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment"))),Read1=values$Read1,stringsAsFactors = F)
                }
 
-        })
+       # })
+        })#end of observe input$selectworkflow 
 
 
         observe({
@@ -195,11 +197,11 @@ server <- function(input, output, session) {
         })
         
         output$hot <- renderRHandsontable({
-          rhandsontable(values$DF, stretchH = "all")
+          rhandsontable(values$DF)#, stretchH = "all"
         })
 
  
-      })#end of observe input$selectworkflow 
+      #})#end of observe input$selectworkflow 
      
          
       observeEvent(input$savetable, {
@@ -207,25 +209,25 @@ server <- function(input, output, session) {
           values$ranstring<-stri_rand_strings(n=1,length=8)
           
           sampleInfo<-isolate(values$DF)
-          sampleInfo<-sampleInfo[!sampleInfo$Group %in% "NA",]
-          rownames(sampleInfo)<-sampleInfo$SampleID
-          sampleInfo$Group<-as.character(sampleInfo$Group)
-          sampleInfo<-sampleInfo[,sort(sampleInfo$Group)]
-          if(values$inWorkflow!="WGBS"){colnames(sampleInfo)[1:2]<-c("sample","condition")}
-          
           ###check for replicates, else issue a warning
-          gl<-min(ave(1:nrow(sampleInfo),sampleInfo$Group,FUN=length))
-          if(gl==1){
-            values$datwarnings<-c(values$datwarnings,"SOME SAMPLE GROUPS DON'T HAVE REPLICATES!!!")
-          }
-          else if (gl==2){
-            values$datwarnings<-c(values$datwarnings,"Some of your sample groups have only 2 replicates. This might be suboptimal for some analyses and lead to higher FDR.")
-          }
-          else if (gl==3){
-            values$datwarnings<-c(values$datwarnings,"All sample groups have at least 3 replicates.")
-          }
-          
-          ###check if ChiPGroup is filled, if yes, create a yaml
+          if(sum(is.na(sampleInfo$Group))<length(sampleInfo$Group)){
+              sampleInfo$Group<-as.character(sampleInfo$Group)
+              sampleInfo<-sampleInfo[!is.na(sampleInfo$Group),]
+              rownames(sampleInfo)<-make.names(sampleInfo$SampleID, unique=TRUE)
+              sampleInfo<-sampleInfo[order(sampleInfo$Group),]
+              gl<-min(ave(1:nrow(sampleInfo),sampleInfo$Group,FUN=length))
+              if(gl==1){
+                values$datwarnings<-c(values$datwarnings,"SOME SAMPLE GROUPS DON'T HAVE REPLICATES!!!")
+              }
+              else if (gl==2){
+                values$datwarnings<-c(values$datwarnings,"Some of your sample groups have only 2 replicates. This might be suboptimal for some analyses and lead to higher FDR.")
+              }
+              else if (gl==3){
+                values$datwarnings<-c(values$datwarnings,"All sample groups have at least 3 replicates.")
+              }
+          }else {rownames(sampleInfo)<-make.names(sampleInfo$SampleID, unique=TRUE)}    
+          # 
+          ###check if ChIPseq is selected, if yes, create a yaml
           if(values$inWorkflow=="ChIP-seq"){
           chip_dict<-sInfoTOyaml(sampleInfo)
           values$chDictDest<-sprintf("/data/manke/group/shiny/snakepipes_input/%s_%s_samples.yaml",values$ranstring,values$analysisName)
@@ -245,6 +247,8 @@ server <- function(input, output, session) {
           
           
           values$sInfoDest<-sprintf("/data/manke/group/shiny/snakepipes_input/%s_%s_sampleSheet.tsv",values$ranstring,values$analysisName)
+          
+          if(values$inWorkflow!="WGBS"){colnames(sampleInfo)[1:2]<-c("sample","condition")}
           
           write.table(sampleInfo,file=values$sInfoDest,sep="\t",quote=FALSE)
           output$sIsaved<-renderText("Sample sheet saved.")
@@ -268,7 +272,7 @@ server <- function(input, output, session) {
                from<-sprintf("<sendmailR@@\\%s>", Sys.info()[4])
                to<-"<sikora@ie-freiburg.mpg.de>"  ##change to "bioinfo-core@ie-freiburg.mpg.de"
                subject<-paste0("Analysis request ",isolate(input$analysistitle), "_" ,isolate(values$ranstring))
-               msg <- gsub(";","\n \n",paste0(cc," has requested the following analysis: \n \n", isolate(values$command),  " \n \n User comments: \n \n" ,isolate(input$comments),"\n \n Please review the input files and the attached sample sheet before proceeding. Consider treating batch effect if pooling data across sequencing project, especially in case of RNAseq. \n \n End of message."))
+               msg <- gsub(";","\n \n",paste0(cc," has requested the following analysis: \n \n", isolate(values$inWorkflow)," \n \n ", values$genome  ," \n \n User comments: \n \n" ,isolate(input$comments),"\n \n Please review the input files and the attached sample sheet before proceeding. Consider treating batch effect if pooling data across sequencing project, especially in case of RNAseq. \n \n End of message. \n \n ",paste(rep("#",times=80),collapse="")," \n \n ", values$command ,"\n \n"))
                if(values$inWorkflow=="ChIP-seq"){
                  sendmail(from=sprintf("<%s>",from), to=to, subject=subject, msg=list(msg,mime_part(isolate(values$sInfoDest)),mime_part(isolate(values$chDictDest)),mime_part(bshscript)),cc=sprintf("<%s>",cc))
                }
