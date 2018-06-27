@@ -81,13 +81,13 @@ server <- function(input, output, session) {
             values$datPath<-grep("*optical*",values$datPath,value=TRUE,invert=TRUE)
                                            
         
-            if(sum(grepl("*_R2.fastq.gz",values$datPath))>0){values$ispaired<-TRUE
+            if(sum(grepl(".+_R*2.fastq.gz",values$datPath,perl=TRUE))>0){values$ispaired<-TRUE
                     output$ispaired<-renderText("Paired reads detected.")
-                    values$Read1<-grep("*_R1.fastq.gz",values$datPath,value=TRUE)
-                    values$Read2<-grep("*_R2.fastq.gz",values$datPath,value=TRUE)
+                    values$Read1<-grep(".+_R*1.fastq.gz",values$datPath,value=TRUE,perl=TRUE)
+                    values$Read2<-grep(".+_R*2.fastq.gz",values$datPath,value=TRUE,perl=TRUE)
                     output$Read1<-renderText(values$Read1)
                     output$Read2<-renderText(values$Read2)
-                    values$datshort<-gsub("_R1.fastq.gz","",basename(grep("*_R1.fastq.gz",values$datPath,value=TRUE)))}
+                    values$datshort<-gsub("_R*1.fastq.gz","",basename(grep(".+_R*1.fastq.gz",values$datPath,value=TRUE,perl=TRUE)),perl=TRUE)}
             else{values$ispaired<-FALSE
                  output$ispaired<-renderText("Single reads detected.")
                  values$Read1<-grep("*.fastq.gz",values$datPath,value=TRUE)
@@ -102,18 +102,18 @@ server <- function(input, output, session) {
             ###############initiate reactive table to collect sample information ###############
             ###use 1 observer to update sample names from added data and onother one to update with manually typed user information
 
-        observe({input$selectworkflow
+        observe({#input$selectworkflow
            values$inWorkflow<-input$selectworkflow
-           values$inGroup<-input$group
            
            path_to_exec<-paste0("/data/manke/sikora/snakepipes/workflows/",values$inWorkflow,"/",values$inWorkflow)###add version selection
-           indir<-sprintf("/data/processing/bioinfo-core/%s/%s_%s_%s_input_reads",values$inGroup,values$analysisName,values$ranstring,values$inWorkflow)
+           topdir<-sprintf("/data/processing/bioinfo-core/requests/%s_%s_%s",values$analysisName,values$ranstring,values$inWorkflow)
+           indir<-sprintf("%s/fastq",topdir)
            link_cmd<- paste0("ln -t ",indir,' -s ',paste(values$Reads,collapse=" "))
            
-           outdir<-sprintf("/data/processing/bioinfo-core/%s/%s_%s_%s_OUT",values$inGroup,values$analysisName,values$ranstring,values$inWorkflow)
+           outdir<-sprintf("%s/analysis",topdir)
            
-           cp_sInfo_cmd<-sprintf("cp -v %s %s",values$sInfoDest,indir)
-           values$sInfo_in<-paste0(indir,"/",basename(values$sInfoDest))
+           cp_sInfo_cmd<-sprintf("cp -v %s %s",values$sInfoDest,topdir)
+           values$sInfo_in<-paste0(topdir,"/",basename(values$sInfoDest))
            genome_sel<-c("Zebrafish"="GRCz10","Fission yeast"="SchizoSPombe_ASM294v2","Fruitfly"="dm6","Human"="hs37d5","Mouse"="mm10")  
            values$genome<-genome_sel[input$genome]
            output$from<-renderUI({textInput(inputId="sender",label="Your email address",placeholder="lastname@ie-freiburg.mpg.de")})
@@ -131,8 +131,8 @@ server <- function(input, output, session) {
            
            else if(values$inWorkflow=="ChIP-seq"){
              
-             cp_chDict_cmd<-sprintf("cp -v %s %s",values$chDictDest,indir)
-             values$chDictr_in<-paste0(indir,"/",basename(values$chDictDest))
+             cp_chDict_cmd<-sprintf("cp -v %s %s",values$chDictDest,topdir)
+             values$chDictr_in<-paste0(topdir,"/",basename(values$chDictDest))
              
              values$command<-sprintf("mkdir -p %s ; %s  ; %s ; %s ; %s -i %s -o %s %s ; %s -d %s --DB %s %s %s",indir,link_cmd,cp_sInfo_cmd,cp_chDict_cmd,path_to_DNA_mapping,indir,outdir,values$genome,path_to_exec,outdir,values$sInfo_in,values$genome,values$chDictr_in) 
              output$command<-renderText({ values$command })
@@ -248,7 +248,7 @@ server <- function(input, output, session) {
           
           values$sInfoDest<-sprintf("/data/manke/group/shiny/snakepipes_input/%s_%s_sampleSheet.tsv",values$ranstring,values$analysisName)
           
-          if(values$inWorkflow!="WGBS"){colnames(sampleInfo)[1:2]<-c("sample","condition")}
+          if(values$inWorkflow!="WGBS"){colnames(sampleInfo)[1:2]<-c("name","condition")}
           
           write.table(sampleInfo,file=values$sInfoDest,sep="\t",quote=FALSE)
           output$sIsaved<-renderText("Sample sheet saved.")
@@ -259,7 +259,10 @@ server <- function(input, output, session) {
         selectInput(inputId="genome", label="Select organism", choices=c("Zebrafish","Fission yeast","Fruitfly","Human","Mouse"), selected = NULL)
       )})
        
-       
+      output$datarequests<- renderUI({tagList(
+        checkboxInput(inputId="merge", label="I want to request sample merging.", value = FALSE, width = NULL),
+        checkboxInput(inputId="beff", label="I expect batch effect in my data.", value = FALSE, width = NULL)
+      )})
    
              observeEvent(input$savesubmit, {
                bshscript<-sprintf("/data/manke/group/shiny/snakepipes_input/%s_%s_script.sh",values$ranstring,values$analysisName)
@@ -268,11 +271,13 @@ server <- function(input, output, session) {
                exports<-"export PATH=/data/processing/conda/bin:$PATH"
                writeLines(c(shebang,exports,unlist(strsplit(isolate(values$command),split=";"))), fileConn)
                close(fileConn)
+               merge_request<-ifelse(isolate(input$merge),"I want to request sample merging.","No sample merging is needed.")
+               b_eff_request<-ifelse(isolate(input$beff),"I expect batch effect in my data.","No batch effect is expected.")
                cc<-isolate(input$sender)
                from<-sprintf("<sendmailR@@\\%s>", Sys.info()[4])
                to<-"<sikora@ie-freiburg.mpg.de>"  ##change to "bioinfo-core@ie-freiburg.mpg.de"
                subject<-paste0("Analysis request ",isolate(input$analysistitle), "_" ,isolate(values$ranstring))
-               msg <- gsub(";","\n \n",paste0(cc," has requested the following analysis: \n \n", isolate(values$inWorkflow)," \n \n ", values$genome  ," \n \n User comments: \n \n" ,isolate(input$comments),"\n \n Please review the input files and the attached sample sheet before proceeding. Consider treating batch effect if pooling data across sequencing project, especially in case of RNAseq. \n \n End of message. \n \n ",paste(rep("#",times=80),collapse="")," \n \n ", values$command ,"\n \n"))
+               msg <- gsub(";","\n \n",paste0(cc," has requested the following analysis: \n \n Workflow: ", isolate(values$inWorkflow)," \n \n Genome: ", values$genome," \n \n ", merge_request," \n \n ", b_eff_request ," \n \n User comments: \n \n", isolate(input$comments),"\n \n Please review the input files and the attached sample sheet before proceeding. \n \n End of message. \n \n ",paste(rep("#",times=80),collapse="")," \n \n ", values$command ,"\n \n"))
                if(values$inWorkflow=="ChIP-seq"){
                  sendmail(from=sprintf("<%s>",from), to=to, subject=subject, msg=list(msg,mime_part(isolate(values$sInfoDest)),mime_part(isolate(values$chDictDest)),mime_part(bshscript)),cc=sprintf("<%s>",cc))
                }
@@ -291,11 +296,11 @@ server <- function(input, output, session) {
 
         output$resultPanels<-renderUI({myTabs<-list(tabPanel(title="Input Data",
                                                       fluidPage(
-                                                          box(textOutput("ispaired"),width=12),
+                                                          box(textOutput("ispaired"),width=12,height=50,title="Read pairing detection"),
                                                           rHandsontableOutput("hot"),
-                                                          box(textOutput("datawarnings")),
-                                                              actionButton(inputId="savetable",label="Save sample sheet",style="background-color: green"),
-                                                          box(textOutput("sIsaved"))
+                                                          box(textOutput("datawarnings"),width=4,height=200,title="Data Warnings"),
+                                                              actionButton(inputId="savetable",label="Save sample sheet"),
+                                                          box(textOutput("sIsaved"),width=4,height=100,title="Table status")
                                                             
                                                               )
                                                           ),
@@ -304,10 +309,11 @@ server <- function(input, output, session) {
                                                              fluidPage(
                                                                fluidRow(
                                                                  uiOutput("from"),
-                                                                 uiOutput("freetext")
+                                                                 uiOutput("freetext"),
+                                                                 uiOutput("datarequests")
                                                                        ),
                                                                  actionButton(inputId="savesubmit",label="Save workflow configuration and submit request"),
-                                                               box(textOutput("eSent"))
+                                                               box(textOutput("eSent"),width=4,height=100,title="Request status")
 
                                                              )
                                                     )
