@@ -176,15 +176,18 @@ server <- function(input, output, session) {
         #      input$selectworkflow
               
               if(values$inWorkflow=="ChIP-seq"){
-              values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment"))),Read1=values$Read1,ChIPgroup=factor(rep("NA",(length(values$datshort))),levels=c("ChIP","Input"),ordered=TRUE),MatchedInput=factor(rep("NA",(length(values$datshort))),levels=unique(values$datshort),ordered=TRUE),MarkWidth=factor(rep("NA",(length(values$datshort))),levels=c("Broad","Narrow"),ordered=TRUE),stringsAsFactors = F)} 
+              values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment","NA"))),Read1=values$Read1,ChIPgroup=factor(rep("NA",(length(values$datshort))),levels=c("ChIP","Input"),ordered=TRUE),MatchedInput=factor(rep("NA",(length(values$datshort))),levels=unique(values$datshort),ordered=TRUE),MarkWidth=factor(rep("NA",(length(values$datshort))),levels=c("Broad","Narrow"),ordered=TRUE),stringsAsFactors = F)} 
 
               else if(values$inWorkflow=="HiC"){
               values$DF<-data.frame(SampleID=values$datshort,Group=(rep("NA",(length(values$datshort)))),Read1=values$Read1,stringsAsFactors = F)}
+           
+              else if(values$inWorkflow=="WGBS"){
+              values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment","WT","Mut","NA"))),PlottingID=values$datshort,Read1=values$Read1,stringsAsFactors = F)}
 
 
                else {
 
-               values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment"))),Read1=values$Read1,stringsAsFactors = F)
+               values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment","NA"))),Read1=values$Read1,stringsAsFactors = F)
                }
 
        # })
@@ -210,9 +213,9 @@ server <- function(input, output, session) {
           
           sampleInfo<-isolate(values$DF)
           ###check for replicates, else issue a warning
-          if(sum(is.na(sampleInfo$Group))<length(sampleInfo$Group)){
+          if(sum(is.na(sampleInfo$Group),sampleInfo$Group %in% "NA")<length(sampleInfo$Group)){
               sampleInfo$Group<-as.character(sampleInfo$Group)
-              sampleInfo<-sampleInfo[!is.na(sampleInfo$Group),]
+              sampleInfo<-sampleInfo[!is.na(sampleInfo$Group)&!sampleInfo$Group %in% "NA",]
               rownames(sampleInfo)<-make.names(sampleInfo$SampleID, unique=TRUE)
               sampleInfo<-sampleInfo[order(sampleInfo$Group),]
               gl<-min(ave(1:nrow(sampleInfo),sampleInfo$Group,FUN=length))
