@@ -105,7 +105,7 @@ server <- function(input, output, session) {
         observe({#input$selectworkflow
            values$inWorkflow<-input$selectworkflow
            
-           path_to_exec<-paste0("/data/manke/sikora/snakepipes/workflows/",values$inWorkflow,"/",values$inWorkflow)###add version selection
+           path_to_exec<-paste0("module load snakePipes; ",values$inWorkflow)###add version selection
            topdir<-sprintf("/data/processing/bioinfo-core/requests/%s_%s_%s",values$analysisName,values$ranstring,values$inWorkflow)
            indir<-sprintf("%s/fastq",topdir)
            link_cmd<- paste0("ln -t ",indir,' -s ',paste(values$Reads,collapse=" "))
@@ -119,7 +119,7 @@ server <- function(input, output, session) {
            output$from<-renderUI({textInput(inputId="sender",label="Your email address",placeholder="lastname@ie-freiburg.mpg.de")})
            output$freetext<-renderUI({textInput(inputId="comments",label="Your message to the bioinfo facility",placeholder="Sample X might be an outlier.",width="600px")})
           
-           path_to_DNA_mapping<-paste0("/data/manke/sikora/snakepipes/workflows/DNA-mapping/DNA-mapping")
+           path_to_DNA_mapping<-paste0("module load snakePipes; DNA-mapping")
            
            
            if(values$inWorkflow=="ATAC-seq"){
@@ -277,15 +277,15 @@ server <- function(input, output, session) {
                merge_request<-ifelse(isolate(input$merge),"I want to request sample merging.","No sample merging is needed.")
                b_eff_request<-ifelse(isolate(input$beff),"I expect batch effect in my data.","No batch effect is expected.")
                cc<-isolate(input$sender)
-               from<-sprintf("<sendmailR@@\\%s>", Sys.info()[4])
-               to<-"<sikora@ie-freiburg.mpg.de>"  ##change to "bioinfo-core@ie-freiburg.mpg.de"
+               from<-sprintf("<sendmailR@%s>", Sys.info()[4])
+               to<-"<bioinfo-core@ie-freiburg.mpg.de>"  
                subject<-paste0("Analysis request ",isolate(input$analysistitle), "_" ,isolate(values$ranstring))
                msg <- gsub(";","\n \n",paste0(cc," has requested the following analysis: \n \n Workflow: ", isolate(values$inWorkflow)," \n \n Genome: ", values$genome," \n \n ", merge_request," \n \n ", b_eff_request ," \n \n User comments: \n \n", isolate(input$comments),"\n \n Please review the input files and the attached sample sheet before proceeding. \n \n End of message. \n \n ",paste(rep("#",times=80),collapse="")," \n \n ", values$command ,"\n \n"))
                if(values$inWorkflow=="ChIP-seq"){
-                 sendmail(from=sprintf("<%s>",from), to=to, subject=subject, msg=list(msg,mime_part(isolate(values$sInfoDest)),mime_part(isolate(values$chDictDest)),mime_part(bshscript)),cc=sprintf("<%s>",cc))
+                 sendmail(from=sprintf("<%s>",from), to=to, subject=subject, control=list(smtpServer="mail.ie-freiburg.mpg.de"), msg=list(msg,mime_part(isolate(values$sInfoDest)),mime_part(isolate(values$chDictDest)),mime_part(bshscript)),cc=sprintf("<%s>",cc))
                }
                else{
-               sendmail(from=sprintf("<%s>",from), to=to, subject=subject, msg=list(msg,mime_part(isolate(values$sInfoDest)),mime_part(bshscript)),cc=sprintf("<%s>",cc))}
+               sendmail(from=sprintf("<%s>",from), to=to, subject=subject, control=list(smtpServer="mail.ie-freiburg.mpg.de"), msg=list(msg,mime_part(isolate(values$sInfoDest)),mime_part(bshscript)),cc=sprintf("<%s>",cc))}
                output$eSent<-renderText("Your request has been sent to the MPI-IE Bioinfo facility. A copy was sent to your email address.")
 
                
