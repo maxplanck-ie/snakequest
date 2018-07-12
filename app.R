@@ -165,7 +165,7 @@ server <- function(input, output, session) {
            
            else if(values$inWorkflow=="WGBS"){
              
-             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s -ri %s -w %s --sampleInfo %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,values$genome) 
+             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s -i %s -o %s --sampleInfo %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,values$genome) 
              output$command<-renderText({ values$command })
              
            } #end of WGBS
