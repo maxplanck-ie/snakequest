@@ -19,7 +19,7 @@ ui <- function(request) {dashboardPage(
         actionButton(inputId="adddataset", label="Add dataset"),
         selectInput(inputId="selectworkflow",label="Select NGS workflow",choices=c("ATAC-seq","ChIP-seq","DNA-mapping","HiC","RNA-seq","WGBS")),
         textInput(inputId="analysistitle", label="Analysis title", value = "", width = NULL, placeholder = NULL),
-        uiOutput("configurator"),
+        selectInput(inputId="genome", label="Select organism", choices=c("PLEASE SELECT A GENOME","Zebrafish","Fission yeast","Fruitfly","Human","Mouse"), selected = NULL),
         imageOutput("logo"),
         tags$footer("Copyright 2018 MPI-IE Freiburg Bioinfo Core Unit")
         ),
@@ -61,6 +61,7 @@ server <- function(input, output, session) {
         values$datdir<-c()
         values$sInfoDest<-""
         values$chDictDest<-""
+        values$genome<-""
         observeEvent(input$adddataset, {
       
         
@@ -103,6 +104,9 @@ server <- function(input, output, session) {
             ###use 1 observer to update sample names from added data and onother one to update with manually typed user information
 
         observe({#input$selectworkflow
+          #validate(
+           # need(input$genome != "PLEASE SELECT A GENOME", "Please select a genome")
+          #)
            values$inWorkflow<-input$selectworkflow
            
            path_to_exec<-paste0("module load snakePipes; ",values$inWorkflow)###add version selection
@@ -114,7 +118,7 @@ server <- function(input, output, session) {
            
            cp_sInfo_cmd<-sprintf("cp -v %s %s",values$sInfoDest,topdir)
            values$sInfo_in<-paste0(topdir,"/",basename(values$sInfoDest))
-           genome_sel<-c("Zebrafish"="GRCz10","Fission yeast"="SchizoSPombe_ASM294v2","Fruitfly"="dm6","Human"="hs37d5","Mouse"="mm10")  
+           genome_sel<-c("Zebrafish [zv10]"="GRCz10","Fission yeast"="SchizoSPombe_ASM294v2","Fruitfly [dm6]"="dm6","Fruitfly [dm3]"="dm3","Human [hg37]"="hs37d5","Human [hg38]"="hg38","Mouse [mm9]"="mm9","Mouse [mm10]"="mm10")  #"PLEASE SELECT A GENOME"="NONE",
            values$genome<-genome_sel[input$genome]
            output$from<-renderUI({textInput(inputId="sender",label="Your email address",placeholder="lastname@ie-freiburg.mpg.de")})
            output$freetext<-renderUI({textInput(inputId="comments",label="Your message to the bioinfo facility",placeholder="Sample X might be an outlier.",width="600px")})
@@ -208,6 +212,7 @@ server <- function(input, output, session) {
      
          
       observeEvent(input$savetable, {
+       
           values$analysisName<-gsub("[^[:alnum:]]", "_", isolate(input$analysistitle))
           values$ranstring<-stri_rand_strings(n=1,length=8)
           
@@ -258,10 +263,7 @@ server <- function(input, output, session) {
           
                   })#end of observe input$savetable
       
-      output$configurator<-renderUI({tagList(
-        selectInput(inputId="genome", label="Select organism", choices=c("Zebrafish","Fission yeast","Fruitfly","Human","Mouse"), selected = NULL)
-      )})
-       
+      
       output$datarequests<- renderUI({tagList(
         checkboxInput(inputId="merge", label="I want to request sample merging.", value = FALSE, width = NULL),
         checkboxInput(inputId="beff", label="I expect batch effect in my data.", value = FALSE, width = NULL)
