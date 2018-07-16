@@ -118,7 +118,7 @@ server <- function(input, output, session) {
            
            cp_sInfo_cmd<-sprintf("cp -v %s %s",values$sInfoDest,topdir)
            values$sInfo_in<-paste0(topdir,"/",basename(values$sInfoDest))
-           genome_sel<-c("Zebrafish [zv10]"="GRCz10","Fission yeast"="SchizoSPombe_ASM294v2","Fruitfly [dm6]"="dm6","Fruitfly [dm3]"="dm3","Human [hg37]"="hs37d5","Human [hg38]"="hg38","Mouse [mm9]"="mm9","Mouse [mm10]"="mm10")  #"PLEASE SELECT A GENOME"="NONE",
+           genome_sel<-c("PLEASE SELECT A GENOME"="NONE","Zebrafish [zv10]"="GRCz10","Fission yeast"="SchizoSPombe_ASM294v2","Fruitfly [dm6]"="dm6","Fruitfly [dm3]"="dm3","Human [hg37]"="hs37d5","Human [hg38]"="hg38","Mouse [mm9]"="mm9","Mouse [mm10]"="mm10")  #"PLEASE SELECT A GENOME"="NONE",
            values$genome<-genome_sel[input$genome]
            output$from<-renderUI({textInput(inputId="sender",label="Your email address",placeholder="lastname@ie-freiburg.mpg.de")})
            output$freetext<-renderUI({textInput(inputId="comments",label="Your message to the bioinfo facility",placeholder="Sample X might be an outlier.",width="600px")})
