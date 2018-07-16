@@ -4,6 +4,7 @@ Rlib="/data/boehm/group/shiny_apps/Rlibs3.4.0"
 library(shiny,lib.loc=Rlib)
 library(shinydashboard,lib.loc=Rlib)
 library(rhandsontable,lib.loc=Rlib)
+library(shinyBS,lib.loc=Rlib)
 
 
 
@@ -21,7 +22,13 @@ ui <- function(request) {dashboardPage(
         textInput(inputId="analysistitle", label="Analysis title", value = "", width = NULL, placeholder = NULL),
         selectInput(inputId="genome", label="Select organism", choices=c("PLEASE SELECT A GENOME","Zebrafish [zv10]","Fission yeast","Fruitfly [dm6]","Fruitfly [dm3]","Human [hg37]","Human [hg38]","Mouse [mm9]","Mouse [mm10]"), selected = NULL),
         imageOutput("logo"),
-        tags$footer("Copyright 2018 MPI-IE Freiburg Bioinfo Core Unit")
+        tags$footer("Copyright 2018 MPI-IE Freiburg Bioinfo Core Unit"),
+        bsTooltip(id="group", title="Enter group/department PI name as specified in the sequencing request.", placement = "right", trigger = "hover"),
+        bsTooltip(id="owner", title="Enter the name of data owner as specified in the sequencing request.", placement = "right", trigger = "hover"),
+        bsTooltip(id="projectid", title="Enter the sequencing project ID/number you have received from the sequencing facility.", placement = "right", trigger = "hover"),
+        bsTooltip(id="pathtodata", title="Paste the path to the folder containg the reads you would like to analyze.", placement = "right", trigger = "hover"),
+        bsTooltip(id="adddataset", title="Add a set of reads identified using the information above.", placement = "right", trigger = "hover"),
+        bsTooltip(id="analysistitle", title="Provide an optional analysis title.", placement = "right", trigger = "hover")
         ),
         
     dashboardBody(
