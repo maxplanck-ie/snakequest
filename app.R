@@ -12,14 +12,14 @@ ui <- function(request) {dashboardPage(
     ## Sidebar content
     dashboardSidebar(
 
+        selectInput(inputId="selectworkflow",label="Select NGS workflow",choices=c("ATAC-seq","ChIP-seq","DNA-mapping","HiC","RNA-seq","WGBS")),
+        textInput(inputId="analysistitle", label="Analysis title", value = "", width = NULL, placeholder = NULL),
+        selectInput(inputId="genome", label="Select organism", choices=c("PLEASE SELECT A GENOME","Zebrafish [zv10]","Fission yeast","Fruitfly [dm6]","Fruitfly [dm3]","Human [hg37]","Human [hg38]","Mouse [mm9]","Mouse [mm10]"), selected = NULL),
         textInput(inputId="group", label="Group", value = "", width = NULL, placeholder = NULL),
         textInput(inputId="owner", label="Project Owner", value = "", width = NULL, placeholder = NULL),
         textInput(inputId="projectid", label="Project ID", value = "", width = NULL, placeholder = NULL),
         textInput(inputId="pathtodata", label="Data folder", value = "", width = NULL, placeholder = NULL),
         actionButton(inputId="adddataset", label="Add dataset"),
-        selectInput(inputId="selectworkflow",label="Select NGS workflow",choices=c("ATAC-seq","ChIP-seq","DNA-mapping","HiC","RNA-seq","WGBS")),
-        textInput(inputId="analysistitle", label="Analysis title", value = "", width = NULL, placeholder = NULL),
-        selectInput(inputId="genome", label="Select organism", choices=c("PLEASE SELECT A GENOME","Zebrafish [zv10]","Fission yeast","Fruitfly [dm6]","Fruitfly [dm3]","Human [hg37]","Human [hg38]","Mouse [mm9]","Mouse [mm10]"), selected = NULL),
         imageOutput("logo"),
         tags$footer("Copyright 2018 MPI-IE Freiburg Bioinfo Core Unit"),
         bsTooltip(id="group", title="Enter group/department PI name as specified in the sequencing request.", placement = "right", trigger = "hover"),
@@ -47,7 +47,7 @@ server <- function(input, output, session) {
        library("sendmailR",lib.loc=Rlib)
   
        sInfoTOyaml<-function(df){
-         df2<-df[!df$ChIPgroup %in% "Input",!colnames(df) %in% c("Group","Read1","SampleID","ChIPgroup")]
+         df2<-df[!df$ChIPgroup %in% "Input",!colnames(df) %in% c("Group","Read1","SampleID","ChIPgroup","Merge")]
          df2$MatchedInput<-as.character(df2$MatchedInput)
          df2$MatchedInput<-paste0("control: ",df2$MatchedInput)
          df2$MarkWidth<-as.character(df2$MarkWidth)
@@ -109,10 +109,7 @@ server <- function(input, output, session) {
             ###############initiate reactive table to collect sample information ###############
             ###use 1 observer to update sample names from added data and onother one to update with manually typed user information
 
-        observe({#input$selectworkflow
-          #validate(
-           # need(input$genome != "PLEASE SELECT A GENOME", "Please select a genome")
-          #)
+        observe({
            values$inWorkflow<-input$selectworkflow
            
            path_to_exec<-paste0("module load snakePipes; ",values$inWorkflow)###add version selection
@@ -186,18 +183,18 @@ server <- function(input, output, session) {
         #      input$selectworkflow
               
               if(values$inWorkflow=="ChIP-seq"){
-              values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment","NA"))),Read1=values$Read1,ChIPgroup=factor(rep("NA",(length(values$datshort))),levels=c("ChIP","Input"),ordered=TRUE),MatchedInput=factor(rep("NA",(length(values$datshort))),levels=unique(values$datshort),ordered=TRUE),MarkWidth=factor(rep("NA",(length(values$datshort))),levels=c("Broad","Narrow"),ordered=TRUE),stringsAsFactors = F)} 
+              values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment","NA"))),Merge=factor(rep("NA",(length(values$datshort))),levels=unique(values$datshort),ordered=TRUE),Read1=values$Read1,ChIPgroup=factor(rep("NA",(length(values$datshort))),levels=c("ChIP","Input"),ordered=TRUE),MatchedInput=factor(rep("NA",(length(values$datshort))),levels=unique(values$datshort),ordered=TRUE),MarkWidth=factor(rep("NA",(length(values$datshort))),levels=c("Broad","Narrow"),ordered=TRUE),stringsAsFactors = F)} 
 
               else if(values$inWorkflow=="HiC"){
-              values$DF<-data.frame(SampleID=values$datshort,Group=(rep("NA",(length(values$datshort)))),Read1=values$Read1,stringsAsFactors = F)}
+              values$DF<-data.frame(SampleID=values$datshort,Group=(rep("NA",(length(values$datshort)))),Merge=factor(rep("NA",(length(values$datshort))),levels=unique(values$datshort),ordered=TRUE),Read1=values$Read1,stringsAsFactors = F)}
            
               else if(values$inWorkflow=="WGBS"){
-              values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment","WT","Mut","NA"))),PlottingID=values$datshort,Read1=values$Read1,stringsAsFactors = F)}
+              values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment","WT","Mut","NA"))),PlottingID=values$datshort,Merge=factor(rep("NA",(length(values$datshort))),levels=unique(values$datshort),ordered=TRUE),Read1=values$Read1,stringsAsFactors = F)}
 
 
                else {
 
-               values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment","NA"))),Read1=values$Read1,stringsAsFactors = F)
+               values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment","NA"))),Merge=factor(rep("NA",(length(values$datshort))),levels=unique(values$datshort),ordered=TRUE),Read1=values$Read1,stringsAsFactors = F)
                }
 
        # })
@@ -282,7 +279,7 @@ server <- function(input, output, session) {
                exports<-"export PATH=/data/processing/conda/bin:$PATH"
                writeLines(c(shebang,exports,unlist(strsplit(isolate(values$command),split=";"))), fileConn)
                close(fileConn)
-               merge_request<-ifelse(isolate(input$merge),"I want to request sample merging.","No sample merging is needed.")
+               merge_request<-ifelse(isolate(input$merge),"I want to request sample merging. Please consider the information I entered in the Merge column of the sample sheet. \n Please update the sample sheet after merging files.","No sample merging is needed.")
                b_eff_request<-ifelse(isolate(input$beff),"I expect batch effect in my data.","No batch effect is expected.")
                cc<-isolate(input$sender)
                from<-sprintf("<sendmailR@%s>", Sys.info()[4])
@@ -304,7 +301,7 @@ server <- function(input, output, session) {
              
         output$logo<-renderImage({list(src="/data/manke/sikora/shiny_apps/userIN_to_yaml/MPIIE_logo_sRGB.jpg",width=100,height=100)},deleteFile =FALSE)
              
-        output$walkthrough<-renderText({"<font size=4><ol><li>Select input data. You can do so by providing either a combination of names and project number or by pasting the path to the folder containg your input reads. Click on Add dataset to retrieve the data. Repeat the procedure until you have retrieved all the data you would like to jointly analyze.</li><li>Specify workflow parameters: which kind of analysis should be performed on your data? Which reference genome should be used? Provide an optional title to your analysis.</li><li>Fill in the sample sheet.Provide experimental group information for your samples. For a ChIPseq workflow, provide the information on input-chip matching and mark width.</li><li>Save your sample sheet. This will reset the table to default.</li><li>Fill in your email address, any comments you would like to pass to the bioinformatic facility and check any boxes might be relevant to your data.</li><li>Submit the analysis. Verify the copy of your request in your email box.</li><li>You're done! You will be contacted by the bioinfo facility as soon as your data goes through the requested pipeline.</li></ol></font>"})
+        output$walkthrough<-renderText({"<font size=4><ol><li>Specify workflow parameters: which kind of analysis should be performed on your data? Which reference genome should be used? Provide an optional title to your analysis.</li><li>Select input data. You can do so by providing either a combination of names and project number or by pasting the path to the folder containg your input reads. Click on Add dataset to retrieve the data. The result appears in the Input Data tab. Repeat the procedure until you have retrieved all the data you would like to jointly analyze.</li><li>Fill in the workflow-specific sample sheet. Detailed explanations will be displayed accordingly. Provide new sample names in the Merge column if you wish your reads to be merged.</li><li>Save your sample sheet. This will reset the table to default.</li><li>Fill in your email address, any comments you would like to pass to the bioinformatic facility and check any boxes might be relevant to your data.</li><li>Submit the analysis. Verify the copy of your request in your email box.</li><li>You're done! You will be contacted by the bioinfo facility as soon as your data goes through the requested pipeline.</li></ol></font>"})
         output$workflow<-renderImage({list(src="/data/manke/sikora/shiny_apps/userIN_to_yaml/dev/userIN_to_yaml.workflow.png",width=800,height=600)},deleteFile=FALSE)     
 
         output$resultPanels<-renderUI({myTabs<-list(tabPanel(title="Walkthrough",
