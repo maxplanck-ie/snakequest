@@ -19,7 +19,7 @@ ui <- function(request) {dashboardPage(
         actionButton(inputId="adddataset", label="Add dataset"),
         selectInput(inputId="selectworkflow",label="Select NGS workflow",choices=c("ATAC-seq","ChIP-seq","DNA-mapping","HiC","RNA-seq","WGBS")),
         textInput(inputId="analysistitle", label="Analysis title", value = "", width = NULL, placeholder = NULL),
-        selectInput(inputId="genome", label="Select organism", choices=c("PLEASE SELECT A GENOME","Zebrafish","Fission yeast","Fruitfly","Human","Mouse"), selected = NULL),
+        selectInput(inputId="genome", label="Select organism", choices=c("PLEASE SELECT A GENOME","Zebrafish [zv10]","Fission yeast","Fruitfly [dm6]","Fruitfly [dm3]","Human [hg37]","Human [hg38]","Mouse [mm9]","Mouse [mm10]"), selected = NULL),
         imageOutput("logo"),
         tags$footer("Copyright 2018 MPI-IE Freiburg Bioinfo Core Unit")
         ),
