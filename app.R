@@ -12,7 +12,7 @@ ui <- function(request) {dashboardPage(
     ## Sidebar content
     dashboardSidebar(
 
-        selectInput(inputId="selectworkflow",label="Select NGS workflow",choices=c("ATAC-seq","ChIP-seq","DNA-mapping","HiC","RNA-seq","WGBS")),
+        selectInput(inputId="selectworkflow",label="Select NGS workflow",choices=c("PLEASE SELECT WORKFLOW","ATAC-seq","ChIP-seq","DNA-mapping","HiC","RNA-seq","WGBS")),
         textInput(inputId="analysistitle", label="Analysis title", value = "", width = NULL, placeholder = NULL),
         selectInput(inputId="genome", label="Select organism", choices=c("PLEASE SELECT A GENOME","Zebrafish [zv10]","Fission yeast","Fruitfly [dm6]","Fruitfly [dm3]","Human [hg37]","Human [hg38]","Mouse [mm9]","Mouse [mm10]"), selected = NULL),
         textInput(inputId="group", label="Group", value = "", width = NULL, placeholder = NULL),
@@ -68,8 +68,10 @@ server <- function(input, output, session) {
         values$sInfoDest<-""
         values$chDictDest<-""
         values$genome<-""
+        
+        
         observeEvent(input$adddataset, {
-      
+          
         
         if((input$group!="")&(input$owner!="")&(input$projectid!="")&(input$pathtodata=="")){
             inGroup<-isolate(input$group)
@@ -178,42 +180,46 @@ server <- function(input, output, session) {
            } #end of WGBS
 
 
-        #observe({
-        #      input$adddataset
-        #      input$selectworkflow
+
               
-              if(values$inWorkflow=="ChIP-seq"){
-              values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment","NA"))),Merge=factor(rep("NA",(length(values$datshort))),levels=unique(values$datshort),ordered=TRUE),Read1=values$Read1,ChIPgroup=factor(rep("NA",(length(values$datshort))),levels=c("ChIP","Input"),ordered=TRUE),MatchedInput=factor(rep("NA",(length(values$datshort))),levels=unique(values$datshort),ordered=TRUE),MarkWidth=factor(rep("NA",(length(values$datshort))),levels=c("Broad","Narrow"),ordered=TRUE),stringsAsFactors = F)} 
+            if(values$inWorkflow=="ChIP-seq"){
+                values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment","NA"))),Merge=factor(rep("NA",(length(values$datshort))),levels=unique(values$datshort),ordered=TRUE),Read1=values$Read1,ChIPgroup=factor(rep("NA",(length(values$datshort))),levels=c("ChIP","Input"),ordered=TRUE),MatchedInput=factor(rep("NA",(length(values$datshort))),levels=unique(values$datshort),ordered=TRUE),MarkWidth=factor(rep("NA",(length(values$datshort))),levels=c("Broad","Narrow"),ordered=TRUE),stringsAsFactors = F)
+                output$tabdesc<-renderText({"<font size=4><ul><li>SampleID: automaticaly parsed from read names: do not modify.</li><li>Group: assign samples to Control and Treatment groups. Leave NA for samples you would like to exclude from the analysis.</li><li>Merge: select a Sample ID under which you would like to merge fastq files. Leave NA if not needed.</li><li>Read1: for your information, the identity of the read file. Only 1 of the 2 paired end files will be listed.</li><li>ChIPgroup: define the samples as Input or ChIP.</li><li>MatchedInput: to each ChIP sample, assign the matched Input sample.</li><li>MarkWidth: specify if Narrow or Broad peak calling mode should be used.</li></ul></font>"})
+                } 
 
-              else if(values$inWorkflow=="HiC"){
-              values$DF<-data.frame(SampleID=values$datshort,Group=(rep("NA",(length(values$datshort)))),Merge=factor(rep("NA",(length(values$datshort))),levels=unique(values$datshort),ordered=TRUE),Read1=values$Read1,stringsAsFactors = F)}
+            else if(values$inWorkflow=="HiC"){
+                values$DF<-data.frame(SampleID=values$datshort,Group=(rep("NA",(length(values$datshort)))),Merge=factor(rep("NA",(length(values$datshort))),levels=unique(values$datshort),ordered=TRUE),Read1=values$Read1,stringsAsFactors = F)
+                output$tabdesc<-renderText({"<font size=4><ul><li>SampleID: automaticaly parsed from read names: do not modify.</li><li>Group: type in sample group names. Leave NA for samples you would like to exclude from the analysis.</li><li>Merge: select a Sample ID under which you would like to merge fastq files. Leave NA if not needed.</li><li>Read1: for your information, the identity of the read file. Only 1 of the 2 paired end files will be listed.</li></ul></font>"})
+                }
            
-              else if(values$inWorkflow=="WGBS"){
-              values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment","WT","Mut","NA"))),PlottingID=values$datshort,Merge=factor(rep("NA",(length(values$datshort))),levels=unique(values$datshort),ordered=TRUE),Read1=values$Read1,stringsAsFactors = F)}
+            else if(values$inWorkflow=="WGBS"){
+                values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment","WT","Mut","NA"))),PlottingID=values$datshort,Merge=factor(rep("NA",(length(values$datshort))),levels=unique(values$datshort),ordered=TRUE),Read1=values$Read1,stringsAsFactors = F)
+                output$tabdesc<-renderText({"<font size=4><ul><li>SampleID: automaticaly parsed from read names: do not modify.</li><li>Group: assign samples to Control and Treatment or WT and Mut groups. Leave NA for samples you would like to exclude from the analysis.</li><li>PlottingID: type in names to use for plots if deviating from sample names.</li><li>Merge: select a Sample ID under which you would like to merge fastq files. Leave NA if not needed.</li><li>Read1: for your information, the identity of the read file. Only 1 of the 2 paired end files will be listed.</li></ul></font>"})
+                }
 
 
-               else {
+            else {
 
                values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment","NA"))),Merge=factor(rep("NA",(length(values$datshort))),levels=unique(values$datshort),ordered=TRUE),Read1=values$Read1,stringsAsFactors = F)
-               }
+               output$tabdesc<-renderText({"<font size=4><ul><li>SampleID: automaticaly parsed from read names: do not modify.</li><li>Group: assign samples to Control and Treatment groups. Leave NA for samples you would like to exclude from the analysis.</li><li>Merge: select a Sample ID under which you would like to merge fastq files. Leave NA if not needed.</li><li>Read1: for your information, the identity of the read file. Only 1 of the 2 paired end files will be listed.</li></ul></font>"})
+                   }
+              
 
-       # })
-        })#end of observe input$selectworkflow 
+
+            })#end of observe input$selectworkflow 
 
 
-        observe({
+          observe({
           if(!is.null(input$hot))
             values$DF <- hot_to_r(input$hot)
         })
         
+        
         output$hot <- renderRHandsontable({
-          rhandsontable(values$DF)#, stretchH = "all"
-        })
+          rhandsontable(values$DF)})
 
  
-      #})#end of observe input$selectworkflow 
-     
-         
+
       observeEvent(input$savetable, {
        
           values$analysisName<-gsub("[^[:alnum:]]", "_", isolate(input$analysistitle))
@@ -269,7 +275,8 @@ server <- function(input, output, session) {
       
       output$datarequests<- renderUI({tagList(
         checkboxInput(inputId="merge", label="I want to request sample merging.", value = FALSE, width = NULL),
-        checkboxInput(inputId="beff", label="I expect batch effect in my data.", value = FALSE, width = NULL)
+        checkboxInput(inputId="beff", label="I expect batch effect in my data.", value = FALSE, width = NULL),
+        checkboxInput(inputId="nodiff", label="I don't need differential analysis.", value = FALSE, width = NULL)
       )})
    
              observeEvent(input$savesubmit, {
@@ -281,11 +288,12 @@ server <- function(input, output, session) {
                close(fileConn)
                merge_request<-ifelse(isolate(input$merge),"I want to request sample merging. Please consider the information I entered in the Merge column of the sample sheet. \n Please update the sample sheet after merging files.","No sample merging is needed.")
                b_eff_request<-ifelse(isolate(input$beff),"I expect batch effect in my data.","No batch effect is expected.")
+               nodiff_request<-ifelse(isolate(input$nodiff),"I don't need differential analysis.","I want to request differential analysis.")
                cc<-isolate(input$sender)
                from<-sprintf("<sendmailR@%s>", Sys.info()[4])
                to<-"<bioinfo-core@ie-freiburg.mpg.de>"  
                subject<-paste0("Analysis request ",isolate(input$analysistitle), "_" ,isolate(values$ranstring))
-               msg <- gsub(";","\n \n",paste0(cc," has requested the following analysis: \n \n Workflow: ", isolate(values$inWorkflow)," \n \n Genome: ", values$genome," \n \n ", merge_request," \n \n ", b_eff_request ," \n \n User comments: \n \n", isolate(input$comments),"\n \n Please review the input files and the attached sample sheet before proceeding. \n \n End of message. \n \n ",paste(rep("#",times=80),collapse="")," \n \n ", values$command ,"\n \n"))
+               msg <- gsub(";","\n \n",paste0(cc," has requested the following analysis: \n \n Workflow: ", isolate(values$inWorkflow)," \n \n Genome: ", values$genome," \n \n ", merge_request," \n \n ", b_eff_request ," \n \n ", nodiff_request," \n \n User comments: \n \n", isolate(input$comments),"\n \n Please review the input files and the attached sample sheet before proceeding. \n \n End of message. \n \n ",paste(rep("#",times=80),collapse="")," \n \n ", values$command ,"\n \n"))
                if(values$inWorkflow=="ChIP-seq"){
                  sendmail(from=sprintf("<%s>",from), to=to, subject=subject, control=list(smtpServer="mail.ie-freiburg.mpg.de"), msg=list(msg,mime_part(isolate(values$sInfoDest)),mime_part(isolate(values$chDictDest)),mime_part(bshscript)),cc=sprintf("<%s>",cc))
                }
@@ -304,28 +312,21 @@ server <- function(input, output, session) {
         output$walkthrough<-renderText({"<font size=4><ol><li>Specify workflow parameters: which kind of analysis should be performed on your data? Which reference genome should be used? Provide an optional title to your analysis.</li><li>Select input data. You can do so by providing either a combination of names and project number or by pasting the path to the folder containg your input reads. Click on Add dataset to retrieve the data. The result appears in the Input Data tab. Repeat the procedure until you have retrieved all the data you would like to jointly analyze.</li><li>Fill in the workflow-specific sample sheet. Detailed explanations will be displayed accordingly. Provide new sample names in the Merge column if you wish your reads to be merged.</li><li>Save your sample sheet. This will reset the table to default.</li><li>Fill in your email address, any comments you would like to pass to the bioinformatic facility and check any boxes might be relevant to your data.</li><li>Submit the analysis. Verify the copy of your request in your email box.</li><li>You're done! You will be contacted by the bioinfo facility as soon as your data goes through the requested pipeline.</li></ol></font>"})
         output$workflow<-renderImage({list(src="/data/manke/sikora/shiny_apps/userIN_to_yaml/dev/userIN_to_yaml.workflow.png",width=800,height=600)},deleteFile=FALSE)     
 
-        output$resultPanels<-renderUI({myTabs<-list(tabPanel(title="Walkthrough",
-                                                             fluidPage(
-                                                               box(htmlOutput("walkthrough"),width=12),
-                                                               imageOutput("workflow",inline=TRUE)
-                                                               
-                                                               
-                                                             )
-                                                        ),
-          
-          
-                                                    tabPanel(title="Input Data",
-                                                      fluidPage(
+        output$resultPanels<-renderUI({myTabs<-list(
+                                                           
+                                                    tabPanel(title="Input Data",value="panel2",
+                                                      fluidPage(tags$head(tags$style(HTML(".shiny-output-error-validation {color: green; position: relative; bottom: -300px;}"))),
                                                           box(textOutput("ispaired"),width=12,height=50,title="Read pairing detection"),
                                                           rHandsontableOutput("hot"),
-                                                          box(textOutput("datawarnings"),width=4,height=200,title="Data Warnings"),
+                                                          box(textOutput("datawarnings"),width=4,height=300,title="Data Warnings"),
                                                               actionButton(inputId="savetable",label="Save sample sheet"),
-                                                          box(textOutput("sIsaved"),width=4,height=100,title="Table status")
+                                                          box(textOutput("sIsaved"),width=4,height=100,title="Table status"),
+                                                          box(htmlOutput("tabdesc"),width=12,title="Column description")
                                                             
                                                               )
                                                           ),
                                                     
-                                                    tabPanel(title="User information",
+                                                    tabPanel(title="User information",value="panel3",
                                                              fluidPage(
                                                                fluidRow(
                                                                  uiOutput("from"),
@@ -336,12 +337,19 @@ server <- function(input, output, session) {
                                                                box(textOutput("eSent"),width=4,height=100,title="Request status")
 
                                                              )
+                                                    ),
+                                                    
+                                                    tabPanel(title="Walkthrough",value="panel1",
+                                                             fluidPage(
+                                                               box(htmlOutput("walkthrough"),width=12),
+                                                               imageOutput("workflow",inline=TRUE)
+                                                             )
                                                     )
                                                     
                                                         )
 
-            do.call(tabsetPanel, myTabs)})
-
+            do.call(tabsetPanel, myTabs)
+        })
 
 }
 
