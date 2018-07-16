@@ -4,7 +4,7 @@ Rlib="/data/boehm/group/shiny_apps/Rlibs3.4.0"
 library(shiny,lib.loc=Rlib)
 library(shinydashboard,lib.loc=Rlib)
 library(rhandsontable,lib.loc=Rlib)
-
+library(shinyBS,lib.loc=Rlib)
 
 
 ui <- function(request) {dashboardPage(
@@ -21,7 +21,13 @@ ui <- function(request) {dashboardPage(
         textInput(inputId="analysistitle", label="Analysis title", value = "", width = NULL, placeholder = NULL),
         selectInput(inputId="genome", label="Select organism", choices=c("PLEASE SELECT A GENOME","Zebrafish [zv10]","Fission yeast","Fruitfly [dm6]","Fruitfly [dm3]","Human [hg37]","Human [hg38]","Mouse [mm9]","Mouse [mm10]"), selected = NULL),
         imageOutput("logo"),
-        tags$footer("Copyright 2018 MPI-IE Freiburg Bioinfo Core Unit")
+        tags$footer("Copyright 2018 MPI-IE Freiburg Bioinfo Core Unit"),
+        bsTooltip(id="group", title="Enter group/department PI name as specified in the sequencing request.", placement = "right", trigger = "hover"),
+        bsTooltip(id="owner", title="Enter the name of data owner as specified in the sequencing request.", placement = "right", trigger = "hover"),
+        bsTooltip(id="projectid", title="Enter the sequencing project ID/number you have received from the sequencing facility.", placement = "right", trigger = "hover"),
+        bsTooltip(id="pathtodata", title="Paste the path to the folder containg the reads you would like to analyze.", placement = "right", trigger = "hover"),
+        bsTooltip(id="adddataset", title="Add a set of reads identified using the information above.", placement = "right", trigger = "hover"),
+        bsTooltip(id="analysistitle", title="Provide an optional analysis title.", placement = "right", trigger = "hover")
         ),
         
     dashboardBody(
@@ -298,8 +304,20 @@ server <- function(input, output, session) {
              
         output$logo<-renderImage({list(src="/data/manke/sikora/shiny_apps/userIN_to_yaml/MPIIE_logo_sRGB.jpg",width=100,height=100)},deleteFile =FALSE)
              
+        output$walkthrough<-renderText({"<font size=4><ol><li>Select input data. You can do so by providing either a combination of names and project number or by pasting the path to the folder containg your input reads. Click on Add dataset to retrieve the data. Repeat the procedure until you have retrieved all the data you would like to jointly analyze.</li><li>Specify workflow parameters: which kind of analysis should be performed on your data? Which reference genome should be used? Provide an optional title to your analysis.</li><li>Fill in the sample sheet.Provide experimental group information for your samples. For a ChIPseq workflow, provide the information on input-chip matching and mark width.</li><li>Save your sample sheet. This will reset the table to default.</li><li>Fill in your email address, any comments you would like to pass to the bioinformatic facility and check any boxes might be relevant to your data.</li><li>Submit the analysis. Verify the copy of your request in your email box.</li><li>You're done! You will be contacted by the bioinfo facility as soon as your data goes through the requested pipeline.</li></ol></font>"})
+        output$workflow<-renderImage({list(src="/data/manke/sikora/shiny_apps/userIN_to_yaml/dev/userIN_to_yaml.workflow.png",width=800,height=600)},deleteFile=FALSE)     
 
-        output$resultPanels<-renderUI({myTabs<-list(tabPanel(title="Input Data",
+        output$resultPanels<-renderUI({myTabs<-list(tabPanel(title="Walkthrough",
+                                                             fluidPage(
+                                                               box(htmlOutput("walkthrough"),width=12),
+                                                               imageOutput("workflow",inline=TRUE)
+                                                               
+                                                               
+                                                             )
+                                                        ),
+          
+          
+                                                    tabPanel(title="Input Data",
                                                       fluidPage(
                                                           box(textOutput("ispaired"),width=12,height=50,title="Read pairing detection"),
                                                           rHandsontableOutput("hot"),
