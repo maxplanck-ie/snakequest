@@ -51,6 +51,7 @@ server <- function(input, output, session) {
          df2$MatchedInput<-as.character(df2$MatchedInput)
          df2$MatchedInput<-paste0("control: ",df2$MatchedInput)
          df2$MarkWidth<-as.character(df2$MarkWidth)
+         df2$MarkWidth[!df2$MarkWidth %in% c("Broad","Narrow")]<-"Narrow"
          df2$MarkWidth[grep("Broad",df2$MarkWidth)]<-noquote("broad: True")
          df2$MarkWidth[grep("Narrow",df2$MarkWidth)]<-noquote("broad: False")
          df3<-as.data.frame(t(df2),stringsAsFactors=FALSE)
@@ -183,24 +184,24 @@ server <- function(input, output, session) {
 
               
             if(values$inWorkflow=="ChIP-seq"){
-                values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment","NA"))),Merge=factor(rep("NA",(length(values$datshort))),levels=unique(values$datshort),ordered=TRUE),Read1=values$Read1,ChIPgroup=factor(rep("NA",(length(values$datshort))),levels=c("ChIP","Input"),ordered=TRUE),MatchedInput=factor(rep("NA",(length(values$datshort))),levels=unique(values$datshort),ordered=TRUE),MarkWidth=factor(rep("NA",(length(values$datshort))),levels=c("Broad","Narrow"),ordered=TRUE),stringsAsFactors = F)
+                values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment","NA"))),Merge=factor(rep("NA",(length(values$datshort))),levels=c("NA",unique(values$datshort)),ordered=TRUE),Read1=values$Read1,ChIPgroup=factor(rep("NA",(length(values$datshort))),levels=c("NA","ChIP","Input"),ordered=TRUE),MatchedInput=factor(rep("NA",(length(values$datshort))),levels=c("NA",unique(values$datshort)),ordered=TRUE),MarkWidth=factor(rep("NA",(length(values$datshort))),levels=c("NA","Broad","Narrow"),ordered=TRUE),stringsAsFactors = F)
                 output$tabdesc<-renderText({"<font size=4><ul><li>SampleID: automaticaly parsed from read names: do not modify.</li><li>Group: assign samples to Control and Treatment groups. Leave NA for samples you would like to exclude from the analysis.</li><li>Merge: select a Sample ID under which you would like to merge fastq files. Leave NA if not needed.</li><li>Read1: for your information, the identity of the read file. Only 1 of the 2 paired end files will be listed.</li><li>ChIPgroup: define the samples as Input or ChIP.</li><li>MatchedInput: to each ChIP sample, assign the matched Input sample.</li><li>MarkWidth: specify if Narrow or Broad peak calling mode should be used.</li></ul></font>"})
                 } 
 
             else if(values$inWorkflow=="HiC"){
-                values$DF<-data.frame(SampleID=values$datshort,Group=(rep("NA",(length(values$datshort)))),Merge=factor(rep("NA",(length(values$datshort))),levels=unique(values$datshort),ordered=TRUE),Read1=values$Read1,stringsAsFactors = F)
+                values$DF<-data.frame(SampleID=values$datshort,Group=(rep("NA",(length(values$datshort)))),Merge=factor(rep("NA",(length(values$datshort))),levels=c("NA",unique(values$datshort)),ordered=TRUE),Read1=values$Read1,stringsAsFactors = F)
                 output$tabdesc<-renderText({"<font size=4><ul><li>SampleID: automaticaly parsed from read names: do not modify.</li><li>Group: type in sample group names. Leave NA for samples you would like to exclude from the analysis.</li><li>Merge: select a Sample ID under which you would like to merge fastq files. Leave NA if not needed.</li><li>Read1: for your information, the identity of the read file. Only 1 of the 2 paired end files will be listed.</li></ul></font>"})
                 }
            
             else if(values$inWorkflow=="WGBS"){
-                values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment","WT","Mut","NA"))),PlottingID=values$datshort,Merge=factor(rep("NA",(length(values$datshort))),levels=unique(values$datshort),ordered=TRUE),Read1=values$Read1,stringsAsFactors = F)
+                values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment","WT","Mut","NA"))),PlottingID=values$datshort,Merge=factor(rep("NA",(length(values$datshort))),levels=c("NA",unique(values$datshort)),ordered=TRUE),Read1=values$Read1,stringsAsFactors = F)
                 output$tabdesc<-renderText({"<font size=4><ul><li>SampleID: automaticaly parsed from read names: do not modify.</li><li>Group: assign samples to Control and Treatment or WT and Mut groups. Leave NA for samples you would like to exclude from the analysis.</li><li>PlottingID: type in names to use for plots if deviating from sample names.</li><li>Merge: select a Sample ID under which you would like to merge fastq files. Leave NA if not needed.</li><li>Read1: for your information, the identity of the read file. Only 1 of the 2 paired end files will be listed.</li></ul></font>"})
                 }
 
 
             else {
 
-               values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment","NA"))),Merge=factor(rep("NA",(length(values$datshort))),levels=unique(values$datshort),ordered=TRUE),Read1=values$Read1,stringsAsFactors = F)
+               values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment","NA"))),Merge=factor(rep("NA",(length(values$datshort))),levels=c("NA",unique(values$datshort)),ordered=TRUE),Read1=values$Read1,stringsAsFactors = F)
                output$tabdesc<-renderText({"<font size=4><ul><li>SampleID: automaticaly parsed from read names: do not modify.</li><li>Group: assign samples to Control and Treatment groups. Leave NA for samples you would like to exclude from the analysis.</li><li>Merge: select a Sample ID under which you would like to merge fastq files. Leave NA if not needed.</li><li>Read1: for your information, the identity of the read file. Only 1 of the 2 paired end files will be listed.</li></ul></font>"})
                    }
               
@@ -314,7 +315,7 @@ server <- function(input, output, session) {
 
         output$resultPanels<-renderUI({myTabs<-list(
                                                            
-                                                    tabPanel(title="Input Data",value="panel2",
+                                                    tabPanel(title="Input Data",
                                                       fluidPage(tags$head(tags$style(HTML(".shiny-output-error-validation {color: green; position: relative; bottom: -300px;}"))),
                                                           box(textOutput("ispaired"),width=12,height=50,title="Read pairing detection"),
                                                           rHandsontableOutput("hot"),
@@ -326,7 +327,7 @@ server <- function(input, output, session) {
                                                               )
                                                           ),
                                                     
-                                                    tabPanel(title="User information",value="panel3",
+                                                    tabPanel(title="User information",
                                                              fluidPage(
                                                                fluidRow(
                                                                  uiOutput("from"),
@@ -339,7 +340,7 @@ server <- function(input, output, session) {
                                                              )
                                                     ),
                                                     
-                                                    tabPanel(title="Walkthrough",value="panel1",
+                                                    tabPanel(title="Walkthrough",
                                                              fluidPage(
                                                                box(htmlOutput("walkthrough"),width=12),
                                                                imageOutput("workflow",inline=TRUE)
