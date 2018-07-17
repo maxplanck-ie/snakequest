@@ -291,15 +291,16 @@ server <- function(input, output, session) {
                b_eff_request<-ifelse(isolate(input$beff),"I expect batch effect in my data.","No batch effect is expected.")
                nodiff_request<-ifelse(isolate(input$nodiff),"I don't need differential analysis.","I want to request differential analysis.")
                cc<-isolate(input$sender)
-               from<-sprintf("<sendmailR@%s>", Sys.info()[4])
-               to<-"<bioinfo-core@ie-freiburg.mpg.de>"  
+               #from<-sprintf("<sendmailR@%s>", Sys.info()[4])
+               from<-"sendmailR@ie-freiburg.mpg.de"
+               to<-"bioinfo-core@ie-freiburg.mpg.de" 
                subject<-paste0("Analysis request ",isolate(input$analysistitle), "_" ,isolate(values$ranstring))
                msg <- gsub(";","\n \n",paste0(cc," has requested the following analysis: \n \n Workflow: ", isolate(values$inWorkflow)," \n \n Genome: ", values$genome," \n \n ", merge_request," \n \n ", b_eff_request ," \n \n ", nodiff_request," \n \n User comments: \n \n", isolate(input$comments),"\n \n Please review the input files and the attached sample sheet before proceeding. \n \n End of message. \n \n ",paste(rep("#",times=80),collapse="")," \n \n ", values$command ,"\n \n"))
                if(values$inWorkflow=="ChIP-seq"){
-                 sendmail(from=sprintf("<%s>",from), to=to, subject=subject, control=list(smtpServer="mail.ie-freiburg.mpg.de"), msg=list(msg,mime_part(isolate(values$sInfoDest)),mime_part(isolate(values$chDictDest)),mime_part(bshscript)),cc=sprintf("<%s>",cc))
+                 sendmail(from=sprintf("%s",from), to=to, subject=subject, control=list(smtpServer="owa.ie-freiburg.mpg.de"), msg=list(msg,mime_part(isolate(values$sInfoDest)),mime_part(isolate(values$chDictDest)),mime_part(bshscript)),cc=sprintf("%s",cc))
                }
                else{
-               sendmail(from=sprintf("<%s>",from), to=to, subject=subject, control=list(smtpServer="mail.ie-freiburg.mpg.de"), msg=list(msg,mime_part(isolate(values$sInfoDest)),mime_part(bshscript)),cc=sprintf("<%s>",cc))}
+               sendmail(from=sprintf("%s",from), to=to, subject=subject, control=list(smtpServer="owa.ie-freiburg.mpg.de"), msg=list(msg,mime_part(isolate(values$sInfoDest)),mime_part(bshscript)),cc=sprintf("%s",cc))}
                output$eSent<-renderText("Your request has been sent to the MPI-IE Bioinfo facility. A copy was sent to your email address.")
 
                
