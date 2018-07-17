@@ -284,7 +284,8 @@ server <- function(input, output, session) {
                bshscript<-sprintf("/data/manke/group/shiny/snakepipes_input/%s_%s_script.sh",values$ranstring,values$analysisName)
                fileConn<-file(bshscript)
                shebang<-"#!/bin/bash"
-               exports<-"export PATH=/data/processing/conda/bin:$PATH"
+               #exports<-"export PATH=/data/processing/conda/bin:$PATH"
+               exports<-""
                writeLines(c(shebang,exports,unlist(strsplit(isolate(values$command),split=";"))), fileConn)
                close(fileConn)
                merge_request<-ifelse(isolate(input$merge),"I want to request sample merging. Please consider the information I entered in the Merge column of the sample sheet. \n Please update the sample sheet after merging files.","No sample merging is needed.")
