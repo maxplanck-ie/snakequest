@@ -104,7 +104,7 @@ server <- function(input, output, session) {
                  output$Read1<-renderText(values$Read1)
                  values$datshort<-gsub(".fastq.gz","",basename(values$datPath))}
             if(length(unique(values$datshort))<length(values$datshort)){
-                values$datwarnings<-"Warning! Your dataset contains multiple instances of identically named samples! If these are resequenced samples, consider merging them before continuing with the analysis or exclude them by leaving NAs in the Group column. Otherwise they will be treated as replicates."
+                values$datwarnings<-"Warning! Your dataset contains multiple instances of identically named samples! If these are resequenced samples, consider merging them before continuing with the analysis or exclude them by leaving NAs in the Group column. Otherwise they will be overwritten."
             }else{values$datwarnings<-"All sample names are unique. Proceed with the analysis."}
             output$datawarnings<-renderText(values$datwarnings)
         },ignoreInit=TRUE)#end of observe input$adddataset
@@ -124,7 +124,7 @@ server <- function(input, output, session) {
            
            cp_sInfo_cmd<-sprintf("cp -v %s %s",values$sInfoDest,topdir)
            values$sInfo_in<-paste0(topdir,"/",basename(values$sInfoDest))
-           genome_sel<-c("PLEASE SELECT A GENOME"="NONE","Zebrafish [zv10]"="GRCz10","Fission yeast"="SchizoSPombe_ASM294v2","Fruitfly [dm6]"="dm6","Fruitfly [dm3]"="dm3","Human [hg37]"="hs37d5","Human [hg38]"="hg38","Mouse [mm9]"="mm9","Mouse [mm10]"="mm10")  #"PLEASE SELECT A GENOME"="NONE",
+           genome_sel<-c("PLEASE SELECT A GENOME"="NONE","Zebrafish [zv10]"="GRCz10","Fission yeast"="SchizoSPombe_ASM294v2","Fruitfly [dm6]"="dm6","Fruitfly [dm3]"="dm3","Human [hg37]"="hs37d5","Human [hg38]"="hg38","Mouse [mm9]"="mm9","Mouse [mm10]"="mm10")  
            values$genome<-genome_sel[input$genome]
            output$from<-renderUI({textInput(inputId="sender",label="Your email address",placeholder="lastname@ie-freiburg.mpg.de")})
            output$freetext<-renderUI({textInput(inputId="comments",label="Your message to the bioinfo facility",placeholder="Sample X might be an outlier.",width="600px")})
@@ -244,7 +244,7 @@ server <- function(input, output, session) {
                 values$datwarnings<-c(values$datwarnings,"All sample groups have at least 3 replicates.")
               }
           }else {rownames(sampleInfo)<-make.names(sampleInfo$SampleID, unique=TRUE)}    
-          # 
+           
           ###check if ChIPseq is selected, if yes, create a yaml
           if(values$inWorkflow=="ChIP-seq"){
           chip_dict<-sInfoTOyaml(sampleInfo)
