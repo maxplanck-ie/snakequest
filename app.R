@@ -87,7 +87,7 @@ server <- function(input, output, session) {
             
             
 
-            values$datdir<-c(values$datdir,system(sprintf("find /data/%s/sequencing_data -name %s_%s_%s_%s -type d | sort",tolower(inGroup),dsel[inFormat],inProjectID,inOwner,inGroup),intern=TRUE)) 
+            values$datdir<-c(values$datdir,system(sprintf("find /data/%s/sequencing_data -name %s_%s_%s_%s -type d | sort",tolower(gsub("-.+","",inGroup)),dsel[inFormat],inProjectID,inOwner,inGroup),intern=TRUE)) 
         }
             
         else if ((input$group=="")&(input$owner=="")&(input$projectid=="")&(input$pathtodata!="")){
