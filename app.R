@@ -185,7 +185,7 @@ server <- function(input, output, session) {
            
            else if(values$inWorkflow=="RNA-seq"){
              
-             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s -i %s -o %s --DE %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,values$genome) 
+             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s --mode alignment -i %s -o %s --DE %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,values$genome) 
              output$command<-renderText({ values$command })
              
            } #end of RNA-seq
