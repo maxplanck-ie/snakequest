@@ -311,7 +311,7 @@ server <- function(input, output, session) {
                merge_request<-ifelse(isolate(input$merge),"I want to request sample merging. Please consider the information I entered in the Merge column of the sample sheet. \n Please update the sample sheet after merging files.","No sample merging is needed.")
                b_eff_request<-ifelse(isolate(input$beff),"I expect batch effect in my data.","No batch effect is expected.")
                nodiff_request<-ifelse(isolate(input$nodiff),"I don't need differential analysis.","I want to request differential analysis.")
-               SE_request<-ifelse(isolate(input$nodiff),"I have single end data.","I have paired end data.")
+               SE_request<-ifelse(isolate(input$SE),"I have single end data.","I have paired end data.")
                cc<-isolate(input$sender)
                #from<-sprintf("<sendmailR@%s>", Sys.info()[4])
                from<-"sendmailR@ie-freiburg.mpg.de"
