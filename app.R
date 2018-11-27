@@ -151,7 +151,7 @@ server <- function(input, output, session) {
            
            if(values$inWorkflow=="ATAC-seq"){
                
-              values$command<-sprintf("mkdir -p %s ; %s ; %s ;%s -i %s -o %s %s ; %s -d %s --DOC %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_DNA_mapping,indir,outdir,values$genome,path_to_exec,outdir,values$sInfo_in,values$genome)
+              values$command<-sprintf("mkdir -p %s ; %s ; %s ;%s -i %s -o %s %s ; %s -d %s --sampleSheet %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_DNA_mapping,indir,outdir,values$genome,path_to_exec,outdir,values$sInfo_in,values$genome)
               output$command<-renderText({ values$command })
               
                      }##end of ATACseq
@@ -161,7 +161,7 @@ server <- function(input, output, session) {
              cp_chDict_cmd<-sprintf("cp -v %s %s",values$chDictDest,topdir)
              values$chDictr_in<-paste0(topdir,"/",basename(values$chDictDest))
              
-             values$command<-sprintf("mkdir -p %s ; %s  ; %s ; %s ; %s -i %s -o %s %s ; %s -d %s --DB %s %s %s",indir,link_cmd,cp_sInfo_cmd,cp_chDict_cmd,path_to_DNA_mapping,indir,outdir,values$genome,path_to_exec,outdir,values$sInfo_in,values$genome,values$chDictr_in) 
+             values$command<-sprintf("mkdir -p %s ; %s  ; %s ; %s ; %s -i %s -o %s %s ; %s -d %s --sampleSheet %s %s %s",indir,link_cmd,cp_sInfo_cmd,cp_chDict_cmd,path_to_DNA_mapping,indir,outdir,values$genome,path_to_exec,outdir,values$sInfo_in,values$genome,values$chDictr_in) 
              output$command<-renderText({ values$command })
              
              
@@ -185,14 +185,14 @@ server <- function(input, output, session) {
            
            else if(values$inWorkflow=="RNA-seq"){
              
-             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s --mode alignment -i %s -o %s --DE %s %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,fbam[input$selectformat],values$genome) 
+             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s --mode alignment -i %s -o %s --sampleSheet %s %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,fbam[input$selectformat],values$genome) 
              output$command<-renderText({ values$command })
              
            } #end of RNA-seq
            
            else if(values$inWorkflow=="WGBS"){
              
-             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s -i %s -o %s --sampleInfo %s %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,fbam[input$selectformat],values$genome) 
+             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s -i %s -o %s --sampleSheet %s %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,fbam[input$selectformat],values$genome) 
              output$command<-renderText({ values$command })
              
            } #end of WGBS
@@ -283,8 +283,7 @@ server <- function(input, output, session) {
           
           values$sInfoDest<-sprintf("/data/manke/group/shiny/snakepipes_input/%s_%s_sampleSheet.tsv",values$ranstring,values$analysisName)
           
-          if(values$inWorkflow!="WGBS"){colnames(sampleInfo)[1:2]<-c("name","condition")}
-          
+          colnames(sampleInfo)[1:2]<-c("name","condition")
           write.table(sampleInfo,file=values$sInfoDest,sep="\t",quote=FALSE)
           output$sIsaved<-renderText("Sample sheet saved.")
           
