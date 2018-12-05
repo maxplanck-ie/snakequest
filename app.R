@@ -248,7 +248,12 @@ server <- function(input, output, session) {
           if(sum(is.na(sampleInfo$Group),sampleInfo$Group %in% "NA")<length(sampleInfo$Group)){
               sampleInfo$Group<-as.character(sampleInfo$Group)
               sampleInfo<-sampleInfo[!is.na(sampleInfo$Group)&!sampleInfo$Group %in% "NA",]
-              rownames(sampleInfo)<-make.names(sampleInfo$SampleID, unique=TRUE)
+              #rownames(sampleInfo)<-make.names(sampleInfo$SampleID, unique=TRUE)
+              srep<-table(sampleInfo$SampleID)[unique(sampleInfo$SampleID)]
+              if(any(srep>1)){
+                  rv<-unlist(sapply(srep,function(X)seq(1,X)))
+                  rn<-paste0(sampleInfo$SampleID,"_",rv)
+                  rownames(sampleInfo)<-rn} else {rownames(sampleInfo)<-sampleInfo$SampleID}
               sampleInfo<-sampleInfo[order(sampleInfo$Group),]
               gl<-min(ave(1:nrow(sampleInfo),sampleInfo$Group,FUN=length))
               if(gl==1){
@@ -260,7 +265,11 @@ server <- function(input, output, session) {
               else if (gl==3){
                 values$datwarnings<-c(values$datwarnings,"All sample groups have at least 3 replicates.")
               }
-          }else {rownames(sampleInfo)<-make.names(sampleInfo$SampleID, unique=TRUE)}    
+          }else {srep<-table(sampleInfo$SampleID)[unique(sampleInfo$SampleID)]
+              if(any(srep>1)){
+                rv<-unlist(sapply(srep,function(X)seq(1,X)))
+                rn<-paste0(sampleInfo$SampleID,"_",rv)
+                rownames(sampleInfo)<-rn} else {rownames(sampleInfo)<-sampleInfo$SampleID}}    
            
           ###check if ChIPseq is selected, if yes, create a yaml
           if(values$inWorkflow=="ChIP-seq"){
