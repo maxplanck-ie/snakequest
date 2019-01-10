@@ -362,7 +362,7 @@ server <- function(input, output, session) {
                                                               )
                                                           ),
                                                     
-                                                    tabPanel(title="User information",
+                                                    tabPanel(title="User information",conditionalPanel(condition= "input.savetable == 1",
                                                              fluidPage(
                                                                fluidRow(
                                                                  uiOutput("from"),
@@ -373,7 +373,7 @@ server <- function(input, output, session) {
                                                                box(textOutput("eSent"),width=4,height=100,title="Request status")
 
                                                              )
-                                                    ),
+                                                    )),
                                                     
                                                     tabPanel(title="Walkthrough",
                                                              fluidPage(
