@@ -346,7 +346,8 @@ server <- function(input, output, session) {
         output$logo<-renderImage({list(src="/data/manke/sikora/shiny_apps/userIN_to_yaml/MPIIE_logo_sRGB.jpg",width=100,height=100)},deleteFile =FALSE)
              
         output$walkthrough<-renderText({"<font size=4><ol><li>Specify workflow parameters: which kind of analysis should be performed on your data? Which reference genome should be used? Provide an optional title to your analysis.</li><li>Select input data. You can do so by providing either a combination of names and project number or by pasting the path to the folder containg your input reads. Click on Add dataset to retrieve the data. The result appears in the Input Data tab. Repeat the procedure until you have retrieved all the data you would like to jointly analyze.</li><li>Fill in the workflow-specific sample sheet. Detailed explanations will be displayed accordingly. Provide new sample names in the Merge column if you wish your reads to be merged.</li><li>Save your sample sheet. This will reset the table to default.</li><li>Fill in your email address, any comments you would like to pass to the bioinformatic facility and check any boxes might be relevant to your data.</li><li>Submit the analysis. Verify the copy of your request in your email box.</li><li>You're done! You will be contacted by the bioinfo facility as soon as your data goes through the requested pipeline.</li></ol></font>"})
-        output$workflow<-renderImage({list(src="/data/manke/sikora/shiny_apps/userIN_to_yaml/dev/userIN_to_yaml.workflow.png",width=800,height=600)},deleteFile=FALSE)     
+        output$workflow<-renderImage({list(src="/data/manke/sikora/shiny_apps/userIN_to_yaml/dev/userIN_to_yaml.workflow.png",width=800,height=600)},deleteFile=FALSE)   
+        output$sampleInfoWarning<-renderText({"Please save sample sheet first."})
 
         output$resultPanels<-renderUI({myTabs<-list(
                                                            
@@ -373,7 +374,8 @@ server <- function(input, output, session) {
                                                                box(textOutput("eSent"),width=4,height=100,title="Request status")
 
                                                              )
-                                                    )),
+                                                    ),
+                                                    conditionalPanel(condition= "input.savetable == 0",box(textOutput("sampleInfoWarning")))),
                                                     
                                                     tabPanel(title="Walkthrough",
                                                              fluidPage(
