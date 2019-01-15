@@ -24,3 +24,6 @@ Tab "Workflow parameters":
  An updated shell command is displayed in the text box.
 7.User is expected to enter their email address and encouraged to provide any additional information about their project in the respective text fields.
 8.By clicking the 'Save workflow configuration and submit request', en email with the copy of the request and the files produced by the app in attachment is sent to the bioinfo core facility, with user in CC.
+
+### this is a test modification
+### this is another test modification

@@ -70,6 +70,8 @@ server <- function(input, output, session) {
         values$sInfoDest<-""
         values$chDictDest<-""
         values$genome<-""
+        #values$DF2<-data.frame(SampleID=rep("NA",2),Group=(factor(rep("NA",2),levels=c("Control","Treatment","NA"))),Merge=factor(rep("NA",2),levels=c("NA"),ordered=TRUE),Read1=rep("NA",2),stringsAsFactors = F)
+        
         
         
         observeEvent(input$adddataset, {
@@ -213,28 +215,29 @@ server <- function(input, output, session) {
             else if(values$inWorkflow=="WGBS"){
                 values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment","WT","Mut","NA"))),PlottingID=values$datshort,Merge=factor(rep("NA",(length(values$datshort))),levels=c("NA",unique(values$datshort)),ordered=TRUE),Read1=values$Read1,stringsAsFactors = F)
                 output$tabdesc<-renderText({"<font size=4><ul><li>SampleID: automaticaly parsed from read names: do not modify.</li><li>Group: assign samples to Control and Treatment or WT and Mut groups. Leave NA for samples you would like to exclude from the analysis.</li><li>PlottingID: type in names to use for plots if deviating from sample names.</li><li>Merge: select a Sample ID under which you would like to merge fastq files. Leave NA if not needed.</li><li>Read1: for your information, the identity of the read file. Only 1 of the 2 paired end files will be listed.</li></ul></font>"})
-                }
-
-
-            else {
+                }  else {
 
                values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment","NA"))),Merge=factor(rep("NA",(length(values$datshort))),levels=c("NA",unique(values$datshort)),ordered=TRUE),Read1=values$Read1,stringsAsFactors = F)
                output$tabdesc<-renderText({"<font size=4><ul><li>SampleID: automaticaly parsed from read names: do not modify.</li><li>Group: assign samples to Control and Treatment groups. Leave NA for samples you would like to exclude from the analysis.</li><li>Merge: select a Sample ID under which you would like to merge fastq files. Leave NA if not needed.</li><li>Read1: for your information, the identity of the read file. Only 1 of the 2 paired end files will be listed.</li></ul></font>"})
                    }
               
 
-
+            #values$DF<-DF
+           DF2<-isolate(values$DF)
+           values$DF2<-DF2
             })#end of observe input$selectworkflow 
-
-
+        
+          
           observe({
-          if(!is.null(input$hot))
-            values$DF <- hot_to_r(input$hot)
+          if(!is.null(input$hot)){
+             DF2 <- hot_to_r(input$hot)
+             values$DF2<-DF2}
         })
         
         
         output$hot <- renderRHandsontable({
-          rhandsontable(values$DF)})
+          DF2<-values$DF2
+          rhandsontable(DF2)})
 
  
 
@@ -243,7 +246,7 @@ server <- function(input, output, session) {
           values$analysisName<-gsub("[^[:alnum:]]", "_", isolate(input$analysistitle))
           values$ranstring<-stri_rand_strings(n=1,length=8)
           
-          sampleInfo<-isolate(values$DF)
+          sampleInfo<-isolate(values$DF2)
           ###check for replicates, else issue a warning
           if(sum(is.na(sampleInfo$Group),sampleInfo$Group %in% "NA")<length(sampleInfo$Group)){
               sampleInfo$Group<-as.character(sampleInfo$Group)
@@ -359,7 +362,7 @@ server <- function(input, output, session) {
                                                               )
                                                           ),
                                                     
-                                                    tabPanel(title="User information",
+                                                    tabPanel(title="User information",conditionalPanel(condition= "input.savetable == 1",
                                                              fluidPage(
                                                                fluidRow(
                                                                  uiOutput("from"),
@@ -370,7 +373,7 @@ server <- function(input, output, session) {
                                                                box(textOutput("eSent"),width=4,height=100,title="Request status")
 
                                                              )
-                                                    ),
+                                                    )),
                                                     
                                                     tabPanel(title="Walkthrough",
                                                              fluidPage(
