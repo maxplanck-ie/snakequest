@@ -1,5 +1,6 @@
 ## app.R ##
-Rlib="/data/boehm/group/shiny_apps/Rlibs3.5.0"
+Rlib="/data/manke/sikora/shiny_apps/Rlibs3.5.0_bioc3.7"
+.libPaths(Rlib)
 
 library(shiny,lib.loc=Rlib)
 library(shinydashboard,lib.loc=Rlib)
