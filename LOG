@@ -870,3 +870,42 @@ Step 11/11 : CMD /usr/local/bin/startup.sh
  ---> e3a48dcde2a2
 Removing intermediate container 7e68039981fe
 Successfully built e3a48dcde2a2
+Sending build context to Docker daemon 2.229 MB
+Step 1/11 : FROM centos:7.2.1511
+ ---> 9aec5c5fe4ba
+Step 2/11 : RUN yum install -y epel-release &&     yum install -y R-3.5.2-2.el7.x86_64 wget nano vim-X11 vim-common vim-enhanced vim-minimal ypbind yp-tools ypserv autofs nfs-utils rsyslog &&     yum install -y openssl-devel curl libcurl-devel mesa-libGLU libpng-devel cairo-devel php  &&     mkdir /data &&     mkdir /etc/automount &&     R -e "install.packages(c('shiny','crosstalk','rmarkdown'), repos='https://cran.rstudio.com/',dependencies=TRUE)"
+ ---> Using cache
+ ---> 259d2ec162ae
+Step 3/11 : RUN unlink /etc/localtime &&     ln -s /usr/share/zoneinfo/Europe/Berlin /etc/localtime
+ ---> Using cache
+ ---> 515cbb5172da
+Step 4/11 : ADD ./mounts.py /usr/local/bin/mounts.py
+ ---> Using cache
+ ---> a90abcff5f3d
+Step 5/11 : ADD ./startup.sh /usr/local/bin/startup.sh
+ ---> 5fc08203929a
+Removing intermediate container c24830334c01
+Step 6/11 : VOLUME /export/
+ ---> Running in 184fdf2db46a
+ ---> c1500ac91566
+Removing intermediate container 184fdf2db46a
+Step 7/11 : RUN mkdir /root/snakequest
+ ---> Running in 7d2d0e5d6c06
+[91m[0m
+ ---> 200e904a5cdd
+Removing intermediate container 7d2d0e5d6c06
+Step 8/11 : COPY app.R /root/snakequest
+ ---> ab8754e7a66e
+Removing intermediate container 354ac7c794a4
+Step 9/11 : COPY Rprofile.site /usr/lib/R/etc/
+ ---> ca946a2cd4cd
+Removing intermediate container fc6316db7967
+Step 10/11 : EXPOSE 2525
+ ---> Running in 93cf07827937
+ ---> 8924431bb505
+Removing intermediate container 93cf07827937
+Step 11/11 : CMD /usr/local/bin/startup.sh
+ ---> Running in 8e3895822562
+ ---> 07658f175a45
+Removing intermediate container 8e3895822562
+Successfully built 07658f175a45
