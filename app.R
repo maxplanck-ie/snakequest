@@ -73,7 +73,15 @@ server <- function(input, output, session) {
         values$genome<-""
         #values$DF2<-data.frame(SampleID=rep("NA",2),Group=(factor(rep("NA",2),levels=c("Control","Treatment","NA"))),Merge=factor(rep("NA",2),levels=c("NA"),ordered=TRUE),Read1=rep("NA",2),stringsAsFactors = F)
         
-        
+        observe({
+          if ((input$group!="")&(input$owner!="")&(input$projectid!="")&(input$pathtodata!="")){
+            showModal(modalDialog(
+              title = "REDUNDANT INFORMATION PROVIDED",
+              "Please make sure to either fill in the Group-Owner-Project fields AND leave the folder path empty, or the reverse!",
+              easyClose = TRUE
+            ))} 
+           
+        })
         
         observeEvent(input$adddataset, {
         
@@ -85,19 +93,27 @@ server <- function(input, output, session) {
             inGroup<-isolate(input$group)
             inOwner<-isolate(input$owner)
             inProjectID<-isolate(input$projectid)
-            
-            
-            
-            
+
 
             values$datdir<-c(values$datdir,system(sprintf("find /data/%s/sequencing_data -name %s_%s_%s_%s -type d | sort",tolower(gsub("-.+","",inGroup)),dsel[inFormat],inProjectID,inOwner,inGroup),intern=TRUE)) 
+            
         }
             
         else if ((input$group=="")&(input$owner=="")&(input$projectid=="")&(input$pathtodata!="")){
             values$datdir<-c(values$datdir,isolate(input$pathtodata))
                 }  
             #handle single and paired end data ###allow for multiple sequencing runs
+        
+        
             values$datPath<-dir(values$datdir,pattern=psel[inFormat],full.names=TRUE,recursive=TRUE)
+            
+            if(!isTruthy(values$datdir)){
+              showModal(modalDialog(
+                title = "DATA NOT FOUND",
+                "Please verify the spelling of Group and Owner names (first capital letter of the last name) or the path you provided!",
+                easyClose = TRUE
+              ))}
+            req(values$datdir)
             
             
             if(inFormat %in% "bam"){
