@@ -119,7 +119,7 @@ server <- function(input, output, session) {
             if(inFormat %in% "bam"){
               values$ispaired<-FALSE
               values$Read1<-grep(".+.bam$",values$datPath,value=TRUE,perl=TRUE)
-              values$datshort<-gsub(".PCRrm","",gsub(".bam","",basename(values$datPath)))                             
+              values$datshort<-gsub(".bam","",gsub(".filtered.bam","",gsub(".PCRrm.bam","",basename(values$datPath))))                          
             }
             else{
                 #get rid of optical duplicates
