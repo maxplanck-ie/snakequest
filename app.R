@@ -264,6 +264,7 @@ server <- function(input, output, session) {
           values$ranstring<-stri_rand_strings(n=1,length=8)
           
           sampleInfo<-isolate(values$DF2)
+          output$hot<-renderRHandsontable({rhandsontable(sampleInfo)})
           ###check for replicates, else issue a warning
           if(sum(is.na(sampleInfo$Group),sampleInfo$Group %in% "NA")<length(sampleInfo$Group)){
               sampleInfo$Group<-as.character(sampleInfo$Group)
