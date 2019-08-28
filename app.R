@@ -95,7 +95,7 @@ server <- function(input, output, session) {
             inProjectID<-isolate(input$projectid)
 
 
-            values$datdir<-c(values$datdir,system(sprintf("find /data/%s/sequencing_data -name %s_%s_%s_%s -type d | sort",tolower(gsub("-.+","",inGroup)),dsel[inFormat],inProjectID,inOwner,inGroup),intern=TRUE)) 
+            values$datdir<-c(values$datdir,system(sprintf("find /data/%s/sequencing_data -path /data/%s/sequencing_data/OxfordNanopore -prune -o -name %s_%s_%s_%s -type d | sort",tolower(gsub("-.+","",inGroup)),tolower(gsub("-.+","",inGroup)),dsel[inFormat],inProjectID,inOwner,inGroup),intern=TRUE)) 
             
         }
             
