@@ -188,8 +188,10 @@ server <- function(input, output, session) {
            
            
            else if(values$inWorkflow=="HiC"){
+             mstr<-ifelse(input$merge,"--mergeSamples","")
+             estr<-ifelse(input$enz,"--enzyme DpnII","--enzyme HindIII")
              
-             values$command<-sprintf("mkdir -p %s ; %s ;  %s ; %s -i %s -o %s %s",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$genome) 
+             values$command<-sprintf("mkdir -p %s ; %s ;  %s ; %s -i %s -o %s %s %s %s",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,estr,mstr,values$genome) 
              output$command<-renderText({ values$command })
              
            }##end of HiC
