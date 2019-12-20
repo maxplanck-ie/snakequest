@@ -188,8 +188,8 @@ server <- function(input, output, session) {
            
            
            else if(values$inWorkflow=="HiC"){
-             mstr<-ifelse(input$merge,"--mergeSamples","")
-             estr<-ifelse(input$enz,"--enzyme DpnII","--enzyme HindIII")
+             mstr<-isolate(values$mstr)
+             estr<-isolate(values$enz)
              
              values$command<-sprintf("mkdir -p %s ; %s ;  %s ; %s -i %s -o %s %s %s %s",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,estr,mstr,values$genome) 
              output$command<-renderText({ values$command })
@@ -337,6 +337,8 @@ server <- function(input, output, session) {
                   checkboxInput(inputId="notads", label="I don't need TAD calling.", value = FALSE, width = NULL))
         }
       })
+      values$mstr<-reactive({ifelse(input$merge,"--mergeSamples","")})
+      values$estr<-reactive({ifelse(input$enz,"--enzyme DpnII","--enzyme HindIII")})
    
              observeEvent(input$savesubmit, {
                bshscript<-sprintf("/data/manke/group/shiny/snakepipes_input/%s_%s_script.sh",values$ranstring,values$analysisName)
