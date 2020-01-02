@@ -257,7 +257,7 @@ server <- function(input, output, session) {
         output$freetext<-renderUI({textInput(inputId="comments",label="Your message to the bioinfo facility",placeholder="Sample X might be an outlier.",width="600px")})
 
         output$datarequests<- renderUI({
-        if(values$inWorkflow %in% c("ATAC-seq","ChIP-seq","DNA-mapping","RNA-seq","WGBS")){
+        if(values$inWorkflow %in% c("ATAC-seq","ChIP-seq","DNA-mapping","WGBS")){
         tagList(
         checkboxInput(inputId="fbam", label="I want to start the analysis from the bam files.", value = FALSE, width = NULL),
         checkboxInput(inputId="merge", label="I want to request sample merging.", value = FALSE, width = NULL),
@@ -269,10 +269,19 @@ server <- function(input, output, session) {
                   checkboxInput(inputId="nodiff", label="I don't need differential analysis.", value = FALSE, width = NULL),
                   checkboxInput(inputId="enz", label="I used DpnII instead of HindIII for restriction digest.", value = FALSE, width = NULL),
                   checkboxInput(inputId="notads", label="I don't need TAD calling.", value = FALSE, width = NULL))
-        }
+        }else if(values$inWorkflow %in% "RNA-seq"){
+         tagList(
+           checkboxInput(inputId="fbam", label="I want to start the analysis from the bam files.", value = FALSE, width = NULL),
+           checkboxInput(inputId="merge", label="I want to request sample merging.", value = FALSE, width = NULL),
+           checkboxInput(inputId="beff", label="I expect batch effect in my data.", value = FALSE, width = NULL),
+           checkboxInput(inputId="nodiff", label="I don't need differential analysis.", value = FALSE, width = NULL),
+           checkboxInput(inputId="SE", label="I have single end, NOT paired end data.", value = FALSE, width = NULL),
+           checkboxInput(inputId="lT", label="My library type is unstranded.", value = FALSE, width = NULL))
+       }
       })
       values$mstr<-reactive({ifelse(input$merge,"--mergeSamples","")})
       values$estr<-reactive({ifelse(input$enz,"--enzyme DpnII","--enzyme HindIII")})
+      values$ltype<-reactive({ifelse(input$lT,"--libraryType 0","")})
 
 
       })#end of observe input$savetable
@@ -339,7 +348,8 @@ server <- function(input, output, session) {
            
            else if(values$inWorkflow=="RNA-seq"){
              
-             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s --mode alignment -i %s -o %s --sampleSheet %s %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,fbam[input$selectformat],values$genome) 
+             ltype<-isolate(values$ltype())
+             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s --mode alignment -i %s -o %s --sampleSheet %s %s %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,fbam[input$selectformat],ltype,values$genome) 
              output$command<-renderText({ values$command })
              
            } #end of RNA-seq
@@ -368,6 +378,7 @@ server <- function(input, output, session) {
                b_eff_request<-ifelse(isolate(input$beff),"I expect batch effect in my data.","No batch effect is expected.")
                nodiff_request<-ifelse(isolate(input$nodiff),"I don't need differential analysis.","I want to request differential analysis.")
                SE_request<-ifelse(isolate(input$SE),"I have single end data.","I have paired end data.")
+               lT_request<-ifelse(isolate(input$lT),"My library type is unstranded.","My library type is stranded.")
                enz_request<-ifelse(isolate(input$enz),"I used DpnII.","I used HindIII.")
                notads_request<-ifelse(isolate(input$notads),"I don't need TAD calling.","I need TAD calling.")
                cc<-isolate(input$sender)
@@ -377,8 +388,10 @@ server <- function(input, output, session) {
                #to<-"sikora@ie-freiburg.mpg.de"
                subject<-paste0("Analysis request ",isolate(input$analysistitle), "_" ,isolate(values$ranstring))
                
-               if(values$inWorkflow %in% c("ATAC-seq","ChIP-seq","DNA-mapping","RNA-seq","WGBS")){msg <- gsub(";","\n \n",paste0(cc," has requested the following analysis: \n \n Workflow: ", isolate(values$inWorkflow)," \n \n Genome: ", values$genome," \n \n ", fbam_request, " \n \n " ,merge_request," \n \n ", b_eff_request ," \n \n ", nodiff_request, " \n \n ", SE_request, " \n \n User comments: \n \n", isolate(input$comments),"\n \n Please review the input files and the attached sample sheet before proceeding. \n \n End of message. \n \n ",paste(rep("#",times=80),collapse="")," \n \n ", values$command ,"\n \n"))
-               }else if(values$inWorkflow %in% "HiC"){msg <- gsub(";","\n \n",paste0(cc," has requested the following analysis: \n \n Workflow: ", isolate(values$inWorkflow)," \n \n Genome: ", values$genome," \n \n ", merge_request," \n \n ", nodiff_request, " \n \n ",enz_request, " \n \n ",notads_request ," \n \n User comments: \n \n", isolate(input$comments),"\n \n Please review the input files and the attached sample sheet before proceeding. \n \n End of message. \n \n ",paste(rep("#",times=80),collapse="")," \n \n ", values$command ,"\n \n"))}
+               if(values$inWorkflow %in% c("ATAC-seq","ChIP-seq","DNA-mapping","WGBS")){msg <- gsub(";","\n \n",paste0(cc," has requested the following analysis: \n \n Workflow: ", isolate(values$inWorkflow)," \n \n Genome: ", values$genome," \n \n ", fbam_request, " \n \n " ,merge_request," \n \n ", b_eff_request ," \n \n ", nodiff_request, " \n \n ", SE_request, " \n \n User comments: \n \n", isolate(input$comments),"\n \n Please review the input files and the attached sample sheet before proceeding. \n \n End of message. \n \n ",paste(rep("#",times=80),collapse="")," \n \n ", values$command ,"\n \n"))
+               }else if(values$inWorkflow %in% "HiC"){msg <- gsub(";","\n \n",paste0(cc," has requested the following analysis: \n \n Workflow: ", isolate(values$inWorkflow)," \n \n Genome: ", values$genome," \n \n ", merge_request," \n \n ", nodiff_request, " \n \n ",enz_request, " \n \n ",notads_request ," \n \n User comments: \n \n", isolate(input$comments),"\n \n Please review the input files and the attached sample sheet before proceeding. \n \n End of message. \n \n ",paste(rep("#",times=80),collapse="")," \n \n ", values$command ,"\n \n"))}else if (values$inWorkflow %in% "RNA-seq"){
+                 msg <- gsub(";","\n \n",paste0(cc," has requested the following analysis: \n \n Workflow: ", isolate(values$inWorkflow)," \n \n Genome: ", values$genome," \n \n ", fbam_request, " \n \n " ,merge_request," \n \n ", b_eff_request ," \n \n ", nodiff_request, " \n \n ", SE_request," \n \n ", lT_request, " \n \n User comments: \n \n", isolate(input$comments),"\n \n Please review the input files and the attached sample sheet before proceeding. \n \n End of message. \n \n ",paste(rep("#",times=80),collapse="")," \n \n ", values$command ,"\n \n"))   
+               }
                
                
                if(values$inWorkflow=="ChIP-seq"){
