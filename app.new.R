@@ -299,7 +299,7 @@ server <- function(input, output, session) {
           
            path_to_DNA_mapping<-paste0("module load snakePipes; DNA-mapping")
            
-           fbam<-c("fastq.gz"="","bam"="--fromBam")
+           fbam<-c("fastq.gz"="","bam"="--fromBAM")
            
            if(values$inWorkflow=="ATAC-seq"){
                
