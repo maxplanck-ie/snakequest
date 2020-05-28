@@ -12,10 +12,10 @@ ui <- function(request) {dashboardPage(
     ## Sidebar content
     dashboardSidebar(
 
-        selectInput(inputId="selectworkflow",label="Select NGS workflow",choices=c("PLEASE SELECT WORKFLOW","ATAC-seq","ChIP-seq","DNA-mapping","HiC","RNA-seq","WGBS")),
+        selectInput(inputId="selectworkflow",label="Select NGS workflow",choices=c("PLEASE SELECT WORKFLOW","ATAC-seq","ChIP-seq","DNA-mapping","HiC","mRNA-seq","noncoding-RNA-seq","WGBS")),
         textInput(inputId="analysistitle", label="Analysis title", value = "", width = NULL, placeholder = NULL),
         selectInput(inputId="genome", label="Select organism", choices=c("PLEASE SELECT A GENOME","Zebrafish [zv10]","Fission yeast","Fruitfly [dm6]","Fruitfly [dm3]","Human [hg37]","Human [hg38]","Mouse [mm9]","Mouse [mm10]"), selected = NULL),
-        selectInput(inputId="selectformat",label="Select input file format",choices=c("fastq.gz","bam")),
+        selectInput(inputId="selectformat",label="Select input file format",choices=c("fastq.gz","bam"),selected="bam"),
         textInput(inputId="group", label="Group", value = "", width = NULL, placeholder = NULL),
         textInput(inputId="owner", label="Project Owner", value = "", width = NULL, placeholder = NULL),
         textInput(inputId="projectid", label="Project ID", value = "", width = NULL, placeholder = NULL),
@@ -269,7 +269,7 @@ server <- function(input, output, session) {
                   checkboxInput(inputId="nodiff", label="I don't need differential analysis.", value = FALSE, width = NULL),
                   checkboxInput(inputId="enz", label="I used DpnII instead of HindIII for restriction digest.", value = FALSE, width = NULL),
                   checkboxInput(inputId="notads", label="I don't need TAD calling.", value = FALSE, width = NULL))
-        }else if(values$inWorkflow %in% "RNA-seq"){
+        }else if(values$inWorkflow %in% "mRNA-seq"){
          tagList(
            checkboxInput(inputId="fbam", label="I want to start the analysis from the bam files.", value = FALSE, width = NULL),
            checkboxInput(inputId="merge", label="I want to request sample merging.", value = FALSE, width = NULL),
@@ -277,7 +277,14 @@ server <- function(input, output, session) {
            checkboxInput(inputId="nodiff", label="I don't need differential analysis.", value = FALSE, width = NULL),
            checkboxInput(inputId="SE", label="I have single end, NOT paired end data.", value = FALSE, width = NULL),
            checkboxInput(inputId="lT", label="My library type is unstranded.", value = FALSE, width = NULL))
-       }
+        }else if(values$inWorkflow %in% "noncoding-RNA-seq"){
+          tagList(
+            checkboxInput(inputId="fbam", label="I want to start the analysis from the bam files.", value = FALSE, width = NULL),
+            checkboxInput(inputId="merge", label="I want to request sample merging.", value = FALSE, width = NULL),
+            checkboxInput(inputId="beff", label="I expect batch effect in my data.", value = FALSE, width = NULL),
+            checkboxInput(inputId="nodiff", label="I don't need differential analysis.", value = FALSE, width = NULL),
+            checkboxInput(inputId="SE", label="I have single end, NOT paired end data.", value = FALSE, width = NULL))
+        }
       })
       values$mstr<-reactive({ifelse(input$merge,"--mergeSamples","")})
       values$estr<-reactive({ifelse(input$enz,"--enzyme DpnII","--enzyme HindIII")})
@@ -292,7 +299,8 @@ server <- function(input, output, session) {
         observeEvent(input$savesubmit, {
                
 ##########prepare the command
-        path_to_exec<-paste0("module load snakePipes; ",values$inWorkflow)###add version selection
+          if(values$inWorkflow %in% c("ChIP-seq","ATAC-seq")){path_to_exec<-values$inWorkflow}else{
+        path_to_exec<-paste0("module load snakePipes; ",values$inWorkflow)}###add version selection
            topdir<-sprintf("/data/processing/bioinfo-core/requests/%s_%s_%s",values$analysisName,values$ranstring,values$inWorkflow)
            dsel<-c("fastq.gz"="fastq","bam"="bam")
            indir<-sprintf("%s/%s",topdir,dsel[input$selectformat])
@@ -346,10 +354,18 @@ server <- function(input, output, session) {
              
            } #end of DNA-mapping
            
-           else if(values$inWorkflow=="RNA-seq"){
+           else if(values$inWorkflow=="mRNA-seq"){
              
              ltype<-isolate(values$ltype())
              values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s --mode alignment -i %s -o %s --sampleSheet %s %s %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,fbam[input$selectformat],ltype,values$genome) 
+             output$command<-renderText({ values$command })
+             
+           } #end of RNA-seq
+           
+           else if(values$inWorkflow=="noncoding-RNA-seq"){
+             
+             ltype<-isolate(values$ltype())
+             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s --mode alignment -i %s -o %s --sampleSheet %s %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,fbam[input$selectformat],values$genome) 
              output$command<-renderText({ values$command })
              
            } #end of RNA-seq
@@ -366,7 +382,6 @@ server <- function(input, output, session) {
         bshscript<-sprintf("/data/manke/group/shiny/snakepipes_input/%s_%s_script.sh",values$ranstring,values$analysisName)
         fileConn<-file(bshscript)
         shebang<-"#!/bin/bash"
-        #exports<-"export PATH=/data/processing/conda/bin:$PATH"
         exports<-""
         writeLines(c(shebang,exports,unlist(strsplit(isolate(values$command),split=";"))), fileConn)
         close(fileConn)
@@ -389,7 +404,7 @@ server <- function(input, output, session) {
                subject<-paste0("Analysis request ",isolate(input$analysistitle), "_" ,isolate(values$ranstring))
                
                if(values$inWorkflow %in% c("ATAC-seq","ChIP-seq","DNA-mapping","WGBS")){msg <- gsub(";","\n \n",paste0(cc," has requested the following analysis: \n \n Workflow: ", isolate(values$inWorkflow)," \n \n Genome: ", values$genome," \n \n ", fbam_request, " \n \n " ,merge_request," \n \n ", b_eff_request ," \n \n ", nodiff_request, " \n \n ", SE_request, " \n \n User comments: \n \n", isolate(input$comments),"\n \n Please review the input files and the attached sample sheet before proceeding. \n \n End of message. \n \n ",paste(rep("#",times=80),collapse="")," \n \n ", values$command ,"\n \n"))
-               }else if(values$inWorkflow %in% "HiC"){msg <- gsub(";","\n \n",paste0(cc," has requested the following analysis: \n \n Workflow: ", isolate(values$inWorkflow)," \n \n Genome: ", values$genome," \n \n ", merge_request," \n \n ", nodiff_request, " \n \n ",enz_request, " \n \n ",notads_request ," \n \n User comments: \n \n", isolate(input$comments),"\n \n Please review the input files and the attached sample sheet before proceeding. \n \n End of message. \n \n ",paste(rep("#",times=80),collapse="")," \n \n ", values$command ,"\n \n"))}else if (values$inWorkflow %in% "RNA-seq"){
+               }else if(values$inWorkflow %in% "HiC"){msg <- gsub(";","\n \n",paste0(cc," has requested the following analysis: \n \n Workflow: ", isolate(values$inWorkflow)," \n \n Genome: ", values$genome," \n \n ", merge_request," \n \n ", nodiff_request, " \n \n ",enz_request, " \n \n ",notads_request ," \n \n User comments: \n \n", isolate(input$comments),"\n \n Please review the input files and the attached sample sheet before proceeding. \n \n End of message. \n \n ",paste(rep("#",times=80),collapse="")," \n \n ", values$command ,"\n \n"))}else if (values$inWorkflow %in% c("mRNA-seq","noncoding-RNA-seq")){
                  msg <- gsub(";","\n \n",paste0(cc," has requested the following analysis: \n \n Workflow: ", isolate(values$inWorkflow)," \n \n Genome: ", values$genome," \n \n ", fbam_request, " \n \n " ,merge_request," \n \n ", b_eff_request ," \n \n ", nodiff_request, " \n \n ", SE_request," \n \n ", lT_request, " \n \n User comments: \n \n", isolate(input$comments),"\n \n Please review the input files and the attached sample sheet before proceeding. \n \n End of message. \n \n ",paste(rep("#",times=80),collapse="")," \n \n ", values$command ,"\n \n"))   
                }
                
