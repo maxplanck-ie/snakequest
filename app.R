@@ -12,10 +12,10 @@ ui <- function(request) {dashboardPage(
     ## Sidebar content
     dashboardSidebar(
 
-        selectInput(inputId="selectworkflow",label="Select NGS workflow",choices=c("PLEASE SELECT WORKFLOW","ATAC-seq","ChIP-seq","DNA-mapping","HiC","RNA-seq","WGBS")),
+        selectInput(inputId="selectworkflow",label="Select NGS workflow",choices=c("PLEASE SELECT WORKFLOW","ATAC-seq","ChIP-seq","DNA-mapping","HiC","mRNA-seq","noncoding-RNA-seq","WGBS","scRNAseq")),
         textInput(inputId="analysistitle", label="Analysis title", value = "", width = NULL, placeholder = NULL),
         selectInput(inputId="genome", label="Select organism", choices=c("PLEASE SELECT A GENOME","Zebrafish [zv10]","Fission yeast","Fruitfly [dm6]","Fruitfly [dm3]","Human [hg37]","Human [hg38]","Mouse [mm9]","Mouse [mm10]"), selected = NULL),
-        selectInput(inputId="selectformat",label="Select input file format",choices=c("fastq.gz","bam")),
+        selectInput(inputId="selectformat",label="Select input file format",choices=c("fastq.gz","bam"),selected="bam"),
         textInput(inputId="group", label="Group", value = "", width = NULL, placeholder = NULL),
         textInput(inputId="owner", label="Project Owner", value = "", width = NULL, placeholder = NULL),
         textInput(inputId="projectid", label="Project ID", value = "", width = NULL, placeholder = NULL),
@@ -46,6 +46,7 @@ server <- function(input, output, session) {
        library("yaml",lib.loc=Rlib)
        library("stringi",lib.loc=Rlib)
        library("sendmailR",lib.loc=Rlib)
+       library("reshape2",lib.loc=Rlib)
 
 #########define functions  
        sInfoTOyaml<-function(df){
@@ -64,6 +65,45 @@ server <- function(input, output, session) {
          l4<-yaml.load(l3ymod)
          return(l4)
        }
+       
+       create_cellName_files<-function(sinfo){
+         sl<-split(sinfo,factor(sinfo$IntermediateID))
+         BCmat<-matrix(1:384,ncol=24,nrow=16,byrow=TRUE)
+         LmatH<-matrix(1:384,ncol=24,nrow=16,byrow=TRUE)
+         LmatHr<-matrix(1:384,ncol=24,nrow=16,byrow=TRUE)
+         for(i in seq(from=2,to=16,by=2)){
+                LmatHr[i,]<-rev(LmatHr[i,])
+             }
+         LmatV<-matrix(1:384,ncol=24,nrow=16,byrow=FALSE)
+         b<-melt(t(BCmat))$value
+         for(i in seq_along(sl)){
+           tabi<-sl[[i]]
+           if(as.character(tabi$SortOrder)=="A1-A24,B1-B24..."){
+             z<-melt(t(LmatH))$value
+           } else if(as.character(tabi$SortOrder)=="A1-P1,A2-P2..."){
+               z<-melt(t(LmatV))$value
+           } else if(as.character(tabi$SortOrder)=="A1-A24,B24-B1..."){
+             z<-melt(t(LmatHr))$value
+             }
+           zb<-data.frame(z,b)
+           cell_idx<-zb$b[order(zb$z)]
+           tabi<-data.frame(tabi,cell_idx)
+           tabi$cell_name<-paste0(tabi$IntermediateID,"_",tabi$cell_idx)
+           sl[[i]]<-tabi
+         }
+         return(sl)
+       }
+       
+       write_cellNames<-function(cnlist,outdir){
+         for(i in seq_along(cnlist)){
+           tabi<-cnlist[[i]]
+           ##subset and rename columns
+           tabi<-tabi[,c("SampleID","Plate","cell_idx","cell_name")]
+           colnames(tabi)<-c("sample","plate","cell_idx","cell_name")
+           write.table(tabi,file=file.path(outdir,paste0(names(cnlist)[i],".csv")),sep="\t",quote=FALSE,row.names=FALSE)
+         }
+       }
+       
   
 
 ########init reactive values
@@ -71,6 +111,7 @@ server <- function(input, output, session) {
         values$datdir<-c()
         values$sInfoDest<-""
         values$chDictDest<-""
+        values$cellNameDest<-""
         values$genome<-""
 
 ####### constant observer on the project input
@@ -164,8 +205,13 @@ server <- function(input, output, session) {
            
             else if(values$inWorkflow=="WGBS"){
                 values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment","WT","Mut","NA"))),PlottingID=values$datshort,Merge=factor(rep("NA",(length(values$datshort))),levels=c("NA",unique(values$datshort)),ordered=TRUE),Read1=values$Read1,stringsAsFactors = F)
-                output$tabdesc<-renderText({"<font size=4><ul><li>SampleID: automaticaly parsed from read names: do not modify.</li><li>Group: assign samples to Control and Treatment or WT and Mut groups. Leave NA for samples you would like to exclude from the analysis.</li><li>PlottingID: type in names to use for plots if deviating from sample names.</li><li>Merge: select a Sample ID under which you would like to merge fastq files. Leave NA if not needed.</li><li>Read1: for your information, the identity of the read file. Only 1 of the 2 paired end files will be listed.</li></ul></font>"})
-                }  else {
+                output$tabdesc<-renderText({"<font size=4><ul><li>SampleID: automaticaly parsed from read names: do not modify.</li><li>Group: assign samples to Control and Treatment or WT and Mut groups. Leave NA for samples you would like to exclude from the analysis.</li><li>PlottingID: type in names to use for plots if deviating from sample names.</li><li>Merge: select a Sample ID under which you would like to merge fastq files. Leave NA if not needed.</li><li>Read1: for your information, the identity of the read file. Only 1 of the 2 paired end files will be listed.</li></ul></font>"})}
+                
+            else if(values$inWorkflow=="scRNAseq"){
+              values$DF<-data.frame(SampleID=values$datshort,Group=(rep("NA",(length(values$datshort)))),Plate=(factor(rep("NA",(length(values$datshort))),levels=c(paste0("P",1:20),"NA"))),NewSampleID=(rep("NA",(length(values$datshort)))),SortOrder=factor(rep("NA",(length(values$datshort))),levels=c("A1-A24,B1-B24...","A1-P1,A2-P2...","A1-A24,B24-B1...","NA")),Read1=values$Read1,stringsAsFactors = F)
+              output$tabdesc<-renderText({"<font size=4><ul><li>You don't need to fill the Group column, this is for internal code compatibility and will be ignored in the analysis. Fill in Plate, NewSampleID, and SortOrder information only if you'd like request analysis with mode Gruen and have your samples renamed. Currently the renaming is implemented only for 384 well format. For other analysis modes, or when no sample renaming is needed, leave in NA values and save sample sheet with the samples you want to use.</li><li>SampleID: automaticaly parsed from read names: do not modify.</li><li>Plate: assign plate number.</li><li>NewSampleID: this will substitute SampleID in the analysis.</li><li>SortOrder: which order were your cells FACS sorted onto the plate? If your sort order is not on the list, ask bioinfo-core to add it.</li><li>Read1: for your information, the identity of the read file. Only 1 of the 2 paired end files will be listed.</li></ul></font>"})
+              
+            }  else {
 
                values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment","NA"))),Merge=factor(rep("NA",(length(values$datshort))),levels=c("NA",unique(values$datshort)),ordered=TRUE),Read1=values$Read1,stringsAsFactors = F)
                output$tabdesc<-renderText({"<font size=4><ul><li>SampleID: automaticaly parsed from read names: do not modify.</li><li>Group: assign samples to Control and Treatment groups. Leave NA for samples you would like to exclude from the analysis.</li><li>Merge: select a Sample ID under which you would like to merge fastq files. Leave NA if not needed.</li><li>Read1: for your information, the identity of the read file. Only 1 of the 2 paired end files will be listed.</li></ul></font>"})
@@ -177,8 +223,6 @@ server <- function(input, output, session) {
            values$DF2<-DF2
      })#end of observe input$selectworkflow
 
-
-            
 
        observe({
           if(!is.null(input$hot)){
@@ -198,6 +242,10 @@ server <- function(input, output, session) {
           values$ranstring<-stri_rand_strings(n=1,length=8)
           
           sampleInfo<-isolate(values$DF2)
+          if(values$inWorkflow=="scRNAseq"){
+            if(sum(sampleInfo$Plate %in% "NA")==nrow(sampleInfo)){sampleInfo$IntermediateID<-sampleInfo$NewSampleID}else{
+              sampleInfo$IntermediateID<-paste0(sampleInfo$NewSampleID,"_",sampleInfo$Plate)}
+          }
           output$hot<-renderRHandsontable({rhandsontable(sampleInfo)})
           ###check for replicates, else issue a warning
           if(sum(is.na(sampleInfo$Group),sampleInfo$Group %in% "NA")<length(sampleInfo$Group)){
@@ -232,6 +280,15 @@ server <- function(input, output, session) {
           values$chDictDest<-sprintf("/data/manke/group/shiny/snakepipes_input/%s_%s_samples.yaml",values$ranstring,values$analysisName)
           write_yaml(noquote(chip_dict),file=isolate(values$chDictDest))
           
+          }
+          
+          ###check if scRNAseq is selected, if yes, create cellName files
+          if(values$inWorkflow=="scRNAseq" & sum(sampleInfo$Plate %in% "NA")!=nrow(sampleInfo)){
+            cellName_list<-create_cellName_files(sampleInfo)
+            values$cellNameDest<-sprintf("/data/manke/group/shiny/snakepipes_input/%s_%s/plate_csv",values$ranstring,values$analysisName)
+            system(paste0('mkdir -p ',values$cellNameDest))
+            write_cellNames(cellName_list,isolate(values$cellNameDest))
+            
           }
           
           #update read1 and read2 stored in reactive values
@@ -269,7 +326,7 @@ server <- function(input, output, session) {
                   checkboxInput(inputId="nodiff", label="I don't need differential analysis.", value = FALSE, width = NULL),
                   checkboxInput(inputId="enz", label="I used DpnII instead of HindIII for restriction digest.", value = FALSE, width = NULL),
                   checkboxInput(inputId="notads", label="I don't need TAD calling.", value = FALSE, width = NULL))
-        }else if(values$inWorkflow %in% "RNA-seq"){
+        }else if(values$inWorkflow %in% "mRNA-seq"){
          tagList(
            checkboxInput(inputId="fbam", label="I want to start the analysis from the bam files.", value = FALSE, width = NULL),
            checkboxInput(inputId="merge", label="I want to request sample merging.", value = FALSE, width = NULL),
@@ -277,11 +334,25 @@ server <- function(input, output, session) {
            checkboxInput(inputId="nodiff", label="I don't need differential analysis.", value = FALSE, width = NULL),
            checkboxInput(inputId="SE", label="I have single end, NOT paired end data.", value = FALSE, width = NULL),
            checkboxInput(inputId="lT", label="My library type is unstranded.", value = FALSE, width = NULL))
-       }
+        }else if(values$inWorkflow %in% "noncoding-RNA-seq"){
+          tagList(
+            checkboxInput(inputId="fbam", label="I want to start the analysis from the bam files.", value = FALSE, width = NULL),
+            checkboxInput(inputId="merge", label="I want to request sample merging.", value = FALSE, width = NULL),
+            checkboxInput(inputId="beff", label="I expect batch effect in my data.", value = FALSE, width = NULL),
+            checkboxInput(inputId="nodiff", label="I don't need differential analysis.", value = FALSE, width = NULL),
+            checkboxInput(inputId="SE", label="I have single end, NOT paired end data.", value = FALSE, width = NULL))
+        }else if(values$inWorkflow %in% "scRNAseq"){
+          tagList(
+            selectInput(inputId="sc_mode", label="Analysis mode",choices=c("Gruen","STARsolo","Alevin"),selected="Gruen"),
+            conditionalPanel(condition="input.sc_mode=='STARsolo'",selectInput(inputId="sc_ltype", label="Kit",choices=c("CellSeq192","CellSeq384","10Xv2","10Xv3"),selected="CellSeq384")),
+            conditionalPanel(condition="input.sc_mode=='Alevin'",selectInput(inputId="sc_ltype", label="PrepProtocol",choices=c("celseq2","chromium","chromiumV3"),selected="celseq2"))
+        )}
       })
       values$mstr<-reactive({ifelse(input$merge,"--mergeSamples","")})
       values$estr<-reactive({ifelse(input$enz,"--enzyme DpnII","--enzyme HindIII")})
       values$ltype<-reactive({ifelse(input$lT,"--libraryType 0","")})
+      values$sc_mode<-input$sc_mode
+      values$sc_ltype<-input$sc_ltype
 
 
       })#end of observe input$savetable
@@ -292,7 +363,8 @@ server <- function(input, output, session) {
         observeEvent(input$savesubmit, {
                
 ##########prepare the command
-        path_to_exec<-paste0("module load snakePipes; ",values$inWorkflow)###add version selection
+          if(values$inWorkflow %in% c("ChIP-seq","ATAC-seq")){path_to_exec<-values$inWorkflow}else{
+        path_to_exec<-paste0("module load snakePipes; ",values$inWorkflow)}###add version selection
            topdir<-sprintf("/data/processing/bioinfo-core/requests/%s_%s_%s",values$analysisName,values$ranstring,values$inWorkflow)
            dsel<-c("fastq.gz"="fastq","bam"="bam")
            indir<-sprintf("%s/%s",topdir,dsel[input$selectformat])
@@ -346,10 +418,17 @@ server <- function(input, output, session) {
              
            } #end of DNA-mapping
            
-           else if(values$inWorkflow=="RNA-seq"){
+           else if(values$inWorkflow=="mRNA-seq"){
              
              ltype<-isolate(values$ltype())
              values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s --mode alignment -i %s -o %s --sampleSheet %s %s %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,fbam[input$selectformat],ltype,values$genome) 
+             output$command<-renderText({ values$command })
+             
+           } #end of RNA-seq
+           
+           else if(values$inWorkflow=="noncoding-RNA-seq"){
+             
+             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s --mode alignment -i %s -o %s --sampleSheet %s %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,fbam[input$selectformat],values$genome) 
              output$command<-renderText({ values$command })
              
            } #end of RNA-seq
@@ -360,13 +439,32 @@ server <- function(input, output, session) {
              output$command<-renderText({ values$command })
              
            } #end of WGBS
+           
+           else if(values$inWorkflow=="scRNAseq"){
+             
+             md<-isolate(input$sc_mode)
+             sc_ltype<-isolate(input$sc_ltype)
+             
+             cp_csv_cmd<-ifelse(dir.exists(isolate(values$cellNameDest)),sprintf("cp -rv %s %s",isolate(values$cellNameDest),topdir),"")
+             cn<-ifelse(dir.exists(values$cellNameDest),sprintf("--cellNames %s",file.path(topdir,"plate_csv")),"")
+             if(md=="Gruen"){
+               lt<-"--trim --cellBarcodeFile /data/processing/bioinfo-core/celseq_barcodes.384.txt --cellBarcodePattern NNNNNNNXXXXXXX"
+             } else if (md=="STARsolo"){
+               lt<-sprintf("--myKit %s",sc_ltype)
+             } else if (md=="Alevin"){
+               lt<-sprintf("--prepRrotocol %s",sc_ltype)
+             }
+             
+             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s ; %s -i %s -o %s %s --mode %s %s %s ",indir,link_cmd,cp_sInfo_cmd,cp_csv_cmd,path_to_exec,indir,outdir,cn,md,lt,values$genome) 
+             output$command<-renderText({ values$command })
+             
+           } #end of scRNAseq
 
 
 ####write command to script
         bshscript<-sprintf("/data/manke/group/shiny/snakepipes_input/%s_%s_script.sh",values$ranstring,values$analysisName)
         fileConn<-file(bshscript)
         shebang<-"#!/bin/bash"
-        #exports<-"export PATH=/data/processing/conda/bin:$PATH"
         exports<-""
         writeLines(c(shebang,exports,unlist(strsplit(isolate(values$command),split=";"))), fileConn)
         close(fileConn)
@@ -389,8 +487,10 @@ server <- function(input, output, session) {
                subject<-paste0("Analysis request ",isolate(input$analysistitle), "_" ,isolate(values$ranstring))
                
                if(values$inWorkflow %in% c("ATAC-seq","ChIP-seq","DNA-mapping","WGBS")){msg <- gsub(";","\n \n",paste0(cc," has requested the following analysis: \n \n Workflow: ", isolate(values$inWorkflow)," \n \n Genome: ", values$genome," \n \n ", fbam_request, " \n \n " ,merge_request," \n \n ", b_eff_request ," \n \n ", nodiff_request, " \n \n ", SE_request, " \n \n User comments: \n \n", isolate(input$comments),"\n \n Please review the input files and the attached sample sheet before proceeding. \n \n End of message. \n \n ",paste(rep("#",times=80),collapse="")," \n \n ", values$command ,"\n \n"))
-               }else if(values$inWorkflow %in% "HiC"){msg <- gsub(";","\n \n",paste0(cc," has requested the following analysis: \n \n Workflow: ", isolate(values$inWorkflow)," \n \n Genome: ", values$genome," \n \n ", merge_request," \n \n ", nodiff_request, " \n \n ",enz_request, " \n \n ",notads_request ," \n \n User comments: \n \n", isolate(input$comments),"\n \n Please review the input files and the attached sample sheet before proceeding. \n \n End of message. \n \n ",paste(rep("#",times=80),collapse="")," \n \n ", values$command ,"\n \n"))}else if (values$inWorkflow %in% "RNA-seq"){
+               }else if(values$inWorkflow %in% "HiC"){msg <- gsub(";","\n \n",paste0(cc," has requested the following analysis: \n \n Workflow: ", isolate(values$inWorkflow)," \n \n Genome: ", values$genome," \n \n ", merge_request," \n \n ", nodiff_request, " \n \n ",enz_request, " \n \n ",notads_request ," \n \n User comments: \n \n", isolate(input$comments),"\n \n Please review the input files and the attached sample sheet before proceeding. \n \n End of message. \n \n ",paste(rep("#",times=80),collapse="")," \n \n ", values$command ,"\n \n"))}else if (values$inWorkflow %in% c("mRNA-seq","noncoding-RNA-seq")){
                  msg <- gsub(";","\n \n",paste0(cc," has requested the following analysis: \n \n Workflow: ", isolate(values$inWorkflow)," \n \n Genome: ", values$genome," \n \n ", fbam_request, " \n \n " ,merge_request," \n \n ", b_eff_request ," \n \n ", nodiff_request, " \n \n ", SE_request," \n \n ", lT_request, " \n \n User comments: \n \n", isolate(input$comments),"\n \n Please review the input files and the attached sample sheet before proceeding. \n \n End of message. \n \n ",paste(rep("#",times=80),collapse="")," \n \n ", values$command ,"\n \n"))   
+               }else if (values$inWorkflow %in% "scRNAseq"){
+                 msg <- gsub(";","\n \n",paste0(cc," has requested the following analysis: \n \n Workflow: ", isolate(values$inWorkflow)," \n \n Genome: ", values$genome," \n \n  Mode: ", md, " \n \n PrepProtocol: ", sc_ltype, " \n \n User comments: \n \n", isolate(input$comments),"\n \n Please review the input files before proceeding. \n \n End of message. \n \n ",paste(rep("#",times=80),collapse="")," \n \n ", values$command ,"\n \n"))   
                }
                
                
