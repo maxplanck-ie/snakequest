@@ -139,7 +139,7 @@ server <- function(input, output, session) {
             inProjectID<-isolate(input$projectid)
 
 
-            values$datdir<-c(values$datdir,system(sprintf("find /data/%s/sequencing_data -path /data/%s/sequencing_data/OxfordNanopore -prune -o -name %s_%s_%s_%s -type d | sort",tolower(gsub("-.+","",inGroup)),tolower(gsub("-.+","",inGroup)),dsel[inFormat],inProjectID,inOwner,inGroup),intern=TRUE)) 
+            values$datdir<-c(values$datdir,system(sprintf("find /data/%s/sequencing_data -name %s_%s_%s_%s -type d -a -not -path /data/%s/sequencing_data/OxfordNanopore -prune | sort",tolower(gsub("-.+","",inGroup)),dsel[inFormat],inProjectID,inOwner,inGroup,tolower(gsub("-.+","",inGroup))),intern=TRUE)) 
             
         }
             
@@ -294,7 +294,7 @@ server <- function(input, output, session) {
           #update read1 and read2 stored in reactive values
           if (values$ispaired){
             vRead1<-sampleInfo$Read1
-            vRead2<-gsub("_R1.fastq.gz","_R2.fastq.gz",sampleInfo$Read1)
+            vRead2<-sub("1.fastq.gz","2.fastq.gz",sampleInfo$Read1)
             values$Reads<-c(vRead1,vRead2)
           } else {
             vRead1<-sampleInfo$Read1
