@@ -384,8 +384,10 @@ server <- function(input, output, session) {
            fbam<-c("fastq.gz"="","bam"="--fromBAM")
            
            if(values$inWorkflow=="ATAC-seq"){
-               
-              values$command<-sprintf("mkdir -p %s ; %s ; %s ;%s -i %s -o %s %s ; %s -d %s --sampleSheet %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_DNA_mapping,indir,outdir,values$genome,path_to_exec,outdir,values$sInfo_in,values$genome)
+              if(input$fbam){
+                values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s -d %s --fromBAM %s --sampleSheet %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,outdir,indir,values$sInfo_in,values$genome)  
+              } else{
+                values$command<-sprintf("mkdir -p %s ; %s ; %s ;%s -i %s -o %s %s ; %s -d %s --sampleSheet %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_DNA_mapping,indir,outdir,values$genome,path_to_exec,outdir,values$sInfo_in,values$genome) }
               output$command<-renderText({ values$command })
               
                      }##end of ATACseq
@@ -394,8 +396,10 @@ server <- function(input, output, session) {
              
              cp_chDict_cmd<-sprintf("cp -v %s %s",values$chDictDest,topdir)
              values$chDictr_in<-paste0(topdir,"/",basename(values$chDictDest))
-             
-             values$command<-sprintf("mkdir -p %s ; %s  ; %s ; %s ; %s -i %s -o %s %s ; %s -d %s --sampleSheet %s %s %s %s",indir,link_cmd,cp_sInfo_cmd,cp_chDict_cmd,path_to_DNA_mapping,indir,outdir,values$genome,path_to_exec,outdir,values$sInfo_in,values$se(),values$genome,values$chDictr_in) 
+             if(input$fbam){
+               values$command<-sprintf("mkdir -p %s ; %s  ; %s ; %s ;  %s -d %s --fromBAM %s --sampleSheet %s %s %s %s",indir,link_cmd,cp_sInfo_cmd,cp_chDict_cmd,path_to_exec,outdir,indir,values$sInfo_in,values$se(),values$genome,values$chDictr_in)   
+             } else {
+               values$command<-sprintf("mkdir -p %s ; %s  ; %s ; %s ; %s -i %s -o %s %s ; %s -d %s --sampleSheet %s %s %s %s",indir,link_cmd,cp_sInfo_cmd,cp_chDict_cmd,path_to_DNA_mapping,indir,outdir,values$genome,path_to_exec,outdir,values$sInfo_in,values$se(),values$genome,values$chDictr_in) }
              output$command<-renderText({ values$command })
              
              
