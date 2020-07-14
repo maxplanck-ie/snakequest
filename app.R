@@ -351,6 +351,7 @@ server <- function(input, output, session) {
       values$mstr<-reactive({ifelse(input$merge,"--mergeSamples","")})
       values$estr<-reactive({ifelse(input$enz,"--enzyme DpnII","--enzyme HindIII")})
       values$ltype<-reactive({ifelse(input$lT,"--libraryType 0","")})
+      values$se<-reactive({ifelse(input$SE,"--singleEnd","")})
       values$sc_mode<-input$sc_mode
       values$sc_ltype<-input$sc_ltype
 
@@ -394,7 +395,7 @@ server <- function(input, output, session) {
              cp_chDict_cmd<-sprintf("cp -v %s %s",values$chDictDest,topdir)
              values$chDictr_in<-paste0(topdir,"/",basename(values$chDictDest))
              
-             values$command<-sprintf("mkdir -p %s ; %s  ; %s ; %s ; %s -i %s -o %s %s ; %s -d %s --sampleSheet %s %s %s",indir,link_cmd,cp_sInfo_cmd,cp_chDict_cmd,path_to_DNA_mapping,indir,outdir,values$genome,path_to_exec,outdir,values$sInfo_in,values$genome,values$chDictr_in) 
+             values$command<-sprintf("mkdir -p %s ; %s  ; %s ; %s ; %s -i %s -o %s %s ; %s -d %s --sampleSheet %s %s %s %s",indir,link_cmd,cp_sInfo_cmd,cp_chDict_cmd,path_to_DNA_mapping,indir,outdir,values$genome,path_to_exec,outdir,values$sInfo_in,values$se(),values$genome,values$chDictr_in) 
              output$command<-renderText({ values$command })
              
              
