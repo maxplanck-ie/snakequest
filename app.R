@@ -179,7 +179,7 @@ server <- function(input, output, session) {
                      output$ispaired<-renderText("Single reads detected.")
                      values$Read1<-grep("*.fastq.gz",values$datPath,value=TRUE)
                      output$Read1<-renderText(values$Read1)
-                     values$datshort<-gsub(".fastq.gz","",basename(values$Read1))}
+                     values$datshort<-gsub("_R*1*.fastq.gz","",basename(values$Read1))}
             }
             if(length(unique(values$datshort))<length(values$datshort)){
                 values$datwarnings<-"Warning! Your dataset contains multiple instances of identically named samples! If these are resequenced samples, consider merging them before continuing with the analysis or exclude them by leaving NAs in the Group column. Otherwise they will be overwritten."
