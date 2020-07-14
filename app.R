@@ -422,21 +422,21 @@ server <- function(input, output, session) {
            else if(values$inWorkflow=="mRNA-seq"){
              
              ltype<-isolate(values$ltype())
-             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s --mode alignment -i %s -o %s --sampleSheet %s %s %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,fbam[input$selectformat],ltype,values$genome) 
+             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s --mode alignment -i %s -o %s --sampleSheet %s %s %s %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,fbam[input$selectformat],ltype,values$se(),values$genome) 
              output$command<-renderText({ values$command })
              
            } #end of RNA-seq
            
            else if(values$inWorkflow=="noncoding-RNA-seq"){
              
-             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s --mode alignment -i %s -o %s --sampleSheet %s %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,fbam[input$selectformat],values$genome) 
+             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s --mode alignment -i %s -o %s --sampleSheet %s %s %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,fbam[input$selectformat],values$se(),values$genome) 
              output$command<-renderText({ values$command })
              
            } #end of RNA-seq
            
            else if(values$inWorkflow=="WGBS"){
              
-             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s -i %s -o %s --sampleSheet %s %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,fbam[input$selectformat],values$genome) 
+             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s -i %s -o %s --sampleSheet %s %s %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,fbam[input$selectformat],values$se(),values$genome) 
              output$command<-renderText({ values$command })
              
            } #end of WGBS
