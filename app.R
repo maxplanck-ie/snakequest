@@ -22,7 +22,7 @@ ui <- function(request) {dashboardPage(
         textInput(inputId="pathtodata", label="Data folder", value = "", width = NULL, placeholder = NULL),
         actionButton(inputId="adddataset", label="Add dataset"),
         imageOutput("logo"),
-        tags$footer("Copyright 2018 MPI-IE Freiburg Bioinfo Core Unit"),
+        tags$footer("Copyright 2018-2020 MPI-IE Freiburg Bioinfo Core Unit"),
         bsTooltip(id="group", title="Enter group/department PI name as specified in the sequencing request.", placement = "right", trigger = "hover"),
         bsTooltip(id="owner", title="Enter the name of data owner as specified in the sequencing request.", placement = "right", trigger = "hover"),
         bsTooltip(id="projectid", title="Enter the sequencing project ID/number you have received from the sequencing facility.", placement = "right", trigger = "hover"),
@@ -52,7 +52,7 @@ server <- function(input, output, session) {
        sInfoTOyaml<-function(df){
          df2<-df[!df$ChIPgroup %in% "Input",!colnames(df) %in% c("Group","Read1","SampleID","ChIPgroup","Merge")]
          df2$MatchedInput<-as.character(df2$MatchedInput)
-         df2$MatchedInput<-paste0("control: ",df2$MatchedInput)
+         df2$MatchedInput<-paste0("control: ",ifelse(df2$MatchedInput=="NA","False",df2$MatchedInput))
          df2$MarkWidth<-as.character(df2$MarkWidth)
          df2$MarkWidth[!df2$MarkWidth %in% c("Broad","Narrow")]<-"Narrow"
          df2$MarkWidth[grep("Broad",df2$MarkWidth)]<-noquote("broad: True")
