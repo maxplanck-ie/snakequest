@@ -22,7 +22,7 @@ ui <- function(request) {dashboardPage(
         textInput(inputId="pathtodata", label="Data folder", value = "", width = NULL, placeholder = NULL),
         actionButton(inputId="adddataset", label="Add dataset"),
         imageOutput("logo"),
-        tags$footer("Copyright 2018 MPI-IE Freiburg Bioinfo Core Unit"),
+        tags$footer("Copyright 2018-2020 MPI-IE Freiburg Bioinfo Core Unit"),
         bsTooltip(id="group", title="Enter group/department PI name as specified in the sequencing request.", placement = "right", trigger = "hover"),
         bsTooltip(id="owner", title="Enter the name of data owner as specified in the sequencing request.", placement = "right", trigger = "hover"),
         bsTooltip(id="projectid", title="Enter the sequencing project ID/number you have received from the sequencing facility.", placement = "right", trigger = "hover"),
@@ -52,7 +52,7 @@ server <- function(input, output, session) {
        sInfoTOyaml<-function(df){
          df2<-df[!df$ChIPgroup %in% "Input",!colnames(df) %in% c("Group","Read1","SampleID","ChIPgroup","Merge")]
          df2$MatchedInput<-as.character(df2$MatchedInput)
-         df2$MatchedInput<-paste0("control: ",df2$MatchedInput)
+         df2$MatchedInput<-paste0("control: ",ifelse(df2$MatchedInput=="NA","False",df2$MatchedInput))
          df2$MarkWidth<-as.character(df2$MarkWidth)
          df2$MarkWidth[!df2$MarkWidth %in% c("Broad","Narrow")]<-"Narrow"
          df2$MarkWidth[grep("Broad",df2$MarkWidth)]<-noquote("broad: True")
@@ -179,7 +179,7 @@ server <- function(input, output, session) {
                      output$ispaired<-renderText("Single reads detected.")
                      values$Read1<-grep("*.fastq.gz",values$datPath,value=TRUE)
                      output$Read1<-renderText(values$Read1)
-                     values$datshort<-gsub(".fastq.gz","",basename(values$Read1))}
+                     values$datshort<-gsub("_R*1*.fastq.gz","",basename(values$Read1))}
             }
             if(length(unique(values$datshort))<length(values$datshort)){
                 values$datwarnings<-"Warning! Your dataset contains multiple instances of identically named samples! If these are resequenced samples, consider merging them before continuing with the analysis or exclude them by leaving NAs in the Group column. Otherwise they will be overwritten."
@@ -351,6 +351,7 @@ server <- function(input, output, session) {
       values$mstr<-reactive({ifelse(input$merge,"--mergeSamples","")})
       values$estr<-reactive({ifelse(input$enz,"--enzyme DpnII","--enzyme HindIII")})
       values$ltype<-reactive({ifelse(input$lT,"--libraryType 0","")})
+      values$se<-reactive({ifelse(input$SE,"--singleEnd","")})
       values$sc_mode<-input$sc_mode
       values$sc_ltype<-input$sc_ltype
 
@@ -383,8 +384,10 @@ server <- function(input, output, session) {
            fbam<-c("fastq.gz"="","bam"="--fromBAM")
            
            if(values$inWorkflow=="ATAC-seq"){
-               
-              values$command<-sprintf("mkdir -p %s ; %s ; %s ;%s -i %s -o %s %s ; %s -d %s --sampleSheet %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_DNA_mapping,indir,outdir,values$genome,path_to_exec,outdir,values$sInfo_in,values$genome)
+              if(input$fbam){
+                values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s -d %s --fromBAM %s --sampleSheet %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,outdir,indir,values$sInfo_in,values$genome)  
+              } else{
+                values$command<-sprintf("mkdir -p %s ; %s ; %s ;%s -i %s -o %s %s ; %s -d %s --sampleSheet %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_DNA_mapping,indir,outdir,values$genome,path_to_exec,outdir,values$sInfo_in,values$genome) }
               output$command<-renderText({ values$command })
               
                      }##end of ATACseq
@@ -393,8 +396,10 @@ server <- function(input, output, session) {
              
              cp_chDict_cmd<-sprintf("cp -v %s %s",values$chDictDest,topdir)
              values$chDictr_in<-paste0(topdir,"/",basename(values$chDictDest))
-             
-             values$command<-sprintf("mkdir -p %s ; %s  ; %s ; %s ; %s -i %s -o %s %s ; %s -d %s --sampleSheet %s %s %s",indir,link_cmd,cp_sInfo_cmd,cp_chDict_cmd,path_to_DNA_mapping,indir,outdir,values$genome,path_to_exec,outdir,values$sInfo_in,values$genome,values$chDictr_in) 
+             if(input$fbam){
+               values$command<-sprintf("mkdir -p %s ; %s  ; %s ; %s ;  %s -d %s --fromBAM %s --sampleSheet %s %s %s %s",indir,link_cmd,cp_sInfo_cmd,cp_chDict_cmd,path_to_exec,outdir,indir,values$sInfo_in,values$se(),values$genome,values$chDictr_in)   
+             } else {
+               values$command<-sprintf("mkdir -p %s ; %s  ; %s ; %s ; %s -i %s -o %s %s ; %s -d %s --sampleSheet %s %s %s %s",indir,link_cmd,cp_sInfo_cmd,cp_chDict_cmd,path_to_DNA_mapping,indir,outdir,values$genome,path_to_exec,outdir,values$sInfo_in,values$se(),values$genome,values$chDictr_in) }
              output$command<-renderText({ values$command })
              
              
@@ -421,21 +426,21 @@ server <- function(input, output, session) {
            else if(values$inWorkflow=="mRNA-seq"){
              
              ltype<-isolate(values$ltype())
-             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s --mode alignment -i %s -o %s --sampleSheet %s %s %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,fbam[input$selectformat],ltype,values$genome) 
+             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s --mode alignment -i %s -o %s --sampleSheet %s %s %s %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,fbam[input$selectformat],ltype,values$se(),values$genome) 
              output$command<-renderText({ values$command })
              
            } #end of RNA-seq
            
            else if(values$inWorkflow=="noncoding-RNA-seq"){
              
-             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s --mode alignment -i %s -o %s --sampleSheet %s %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,fbam[input$selectformat],values$genome) 
+             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s --mode alignment -i %s -o %s --sampleSheet %s %s %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,fbam[input$selectformat],values$se(),values$genome) 
              output$command<-renderText({ values$command })
              
            } #end of RNA-seq
            
            else if(values$inWorkflow=="WGBS"){
              
-             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s -i %s -o %s --sampleSheet %s %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,fbam[input$selectformat],values$genome) 
+             values$command<-sprintf("mkdir -p %s ; %s ; %s ; %s -i %s -o %s --sampleSheet %s %s %s %s ",indir,link_cmd,cp_sInfo_cmd,path_to_exec,indir,outdir,values$sInfo_in,fbam[input$selectformat],values$se(),values$genome) 
              output$command<-renderText({ values$command })
              
            } #end of WGBS
