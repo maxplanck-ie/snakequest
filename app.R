@@ -1,5 +1,6 @@
 ## app.R ##
-Rlib="/data/manke/sikora/shiny_apps/Rlibs3.5.0_bioc3.7"
+#Rlib="/data/manke/sikora/shiny_apps/Rlibs3.5.0_bioc3.7"
+Rlib="/rstudio/galaxy/.rstudio/R/x86_64-pc-linux-gnu-library/3.6"
 .libPaths(Rlib)
 
 library(shiny,lib.loc=Rlib)
@@ -205,7 +206,9 @@ server <- function(input, output, session) {
            
             else if(values$inWorkflow=="WGBS"){
                 values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment","WT","Mut","NA"))),PlottingID=values$datshort,Merge=factor(rep("NA",(length(values$datshort))),levels=c("NA",unique(values$datshort)),ordered=TRUE),Read1=values$Read1,stringsAsFactors = F)
-                output$tabdesc<-renderText({"<font size=4><ul><li>SampleID: automaticaly parsed from read names: do not modify.</li><li>Group: assign samples to Control and Treatment or WT and Mut groups. Leave NA for samples you would like to exclude from the analysis.</li><li>PlottingID: type in names to use for plots if deviating from sample names.</li><li>Merge: select a Sample ID under which you would like to merge fastq files. Leave NA if not needed.</li><li>Read1: for your information, the identity of the read file. Only 1 of the 2 paired end files will be listed.</li></ul></font>"})}
+                output$tabdesc<-renderText({"<font size=4><ul><li>SampleID: automaticaly parsed from read names: do not modify.</li><li>Group: assign samples to Control and Treatment or WT and Mut groups. Leave NA for samples you would like to exclude from the analysis.</li><li>PlottingID: type in names to use for plots if deviating from sample names.</li><li>Merge: select a Sample ID under which you would like to merge fastq files. Leave NA if not needed.</li><li>Read1: for your information, the identity of the read file. Only 1 of the 2 paired end files will be listed.</li></ul></font>"})
+                
+            }
                 
             else if(values$inWorkflow=="scRNAseq"){
               values$DF<-data.frame(SampleID=values$datshort,Group=(rep("NA",(length(values$datshort)))),Plate=(factor(rep("NA",(length(values$datshort))),levels=c(paste0("P",1:20),"NA"))),NewSampleID=(rep("NA",(length(values$datshort)))),SortOrder=factor(rep("NA",(length(values$datshort))),levels=c("A1-A24,B1-B24...","A1-P1,A2-P2...","A1-A24,B24-B1...","NA")),Read1=values$Read1,stringsAsFactors = F)
@@ -233,7 +236,7 @@ server <- function(input, output, session) {
         
         output$hot <- renderRHandsontable({
           DF2<-values$DF2
-          rhandsontable(DF2)})
+          rhandsontable(DF2,height=400)})
 
 ##########observe save samplesheet
         observeEvent(input$savetable, {
