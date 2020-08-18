@@ -336,7 +336,7 @@ server <- function(input, output, session) {
            checkboxInput(inputId="beff", label="I expect batch effect in my data.", value = FALSE, width = NULL),
            checkboxInput(inputId="nodiff", label="I don't need differential analysis.", value = FALSE, width = NULL),
            checkboxInput(inputId="SE", label="I have single end, NOT paired end data.", value = FALSE, width = NULL),
-           checkboxInput(inputId="lT", label="My library type is unstranded.", value = FALSE, width = NULL))
+           checkboxInput(inputId="lT", label="I used NEBNext Low Input RNA Library Prep and my library type is unstranded.", value = FALSE, width = NULL))
         }else if(values$inWorkflow %in% "noncoding-RNA-seq"){
           tagList(
             checkboxInput(inputId="fbam", label="I want to start the analysis from the bam files.", value = FALSE, width = NULL),
