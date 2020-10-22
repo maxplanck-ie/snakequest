@@ -3,10 +3,10 @@
 Rlib="/rstudio/galaxy/.rstudio/R/x86_64-pc-linux-gnu-library/3.6"
 .libPaths(Rlib)
 
-library(shiny,lib.loc=Rlib)
+library(shiny)
 library(shinydashboard,lib.loc=Rlib)
-library(rhandsontable,lib.loc=Rlib)
-library(shinyBS,lib.loc=Rlib)
+library(rhandsontable)
+library(shinyBS)
 
 ui <- function(request) {dashboardPage(
     dashboardHeader(title = "Dataset selection"),
@@ -44,10 +44,10 @@ ui <- function(request) {dashboardPage(
 server <- function(input, output, session) {
 
 ##########load packages  
-       library("yaml",lib.loc=Rlib)
-       library("stringi",lib.loc=Rlib)
-       library("sendmailR",lib.loc=Rlib)
-       library("reshape2",lib.loc=Rlib)
+       library("yaml")
+       library("stringi")
+       library("sendmailR")
+       library("reshape2")
 
 #########define functions  
        sInfoTOyaml<-function(df){
