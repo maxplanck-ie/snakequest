@@ -204,7 +204,7 @@ server <- function(input, output, session) {
                 output$tabdesc<-renderText({"<font size=4><ul><li>SampleID: automaticaly parsed from read names: do not modify.</li><li>Group: type in sample group names. Leave NA for samples you would like to exclude from the analysis.</li><li>Merge: select a Sample ID under which you would like to merge fastq files. Leave NA if not needed.</li><li>Read1: for your information, the identity of the read file. Only 1 of the 2 paired end files will be listed.</li></ul></font>"})
                 }
            
-            else if(values$inWorkflow=="WGBS"){
+            else if(values$inWorkflow %in% c("WGBS","ATAC-seq")){
                 values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment","WT","Mut","NA"))),PlottingID=values$datshort,Merge=factor(rep("NA",(length(values$datshort))),levels=c("NA",unique(values$datshort)),ordered=TRUE),Read1=values$Read1,stringsAsFactors = F)
                 output$tabdesc<-renderText({"<font size=4><ul><li>SampleID: automaticaly parsed from read names: do not modify.</li><li>Group: assign samples to Control and Treatment or WT and Mut groups. Leave NA for samples you would like to exclude from the analysis.</li><li>PlottingID: type in names to use for plots if deviating from sample names.</li><li>Merge: select a Sample ID under which you would like to merge fastq files. Leave NA if not needed.</li><li>Read1: for your information, the identity of the read file. Only 1 of the 2 paired end files will be listed.</li></ul></font>"})
                 
@@ -216,7 +216,7 @@ server <- function(input, output, session) {
               
             }  else {
 
-               values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control","Treatment","NA"))),Merge=factor(rep("NA",(length(values$datshort))),levels=c("NA",unique(values$datshort)),ordered=TRUE),Read1=values$Read1,stringsAsFactors = F)
+               values$DF<-data.frame(SampleID=values$datshort,Group=(factor(rep("NA",(length(values$datshort))),levels=c("Control",paste0("Control",1:20),"Treatment",paste0("Treatment",1:20),"NA"))),Merge=factor(rep("NA",(length(values$datshort))),levels=c("NA",unique(values$datshort)),ordered=TRUE),Read1=values$Read1,stringsAsFactors = F)
                output$tabdesc<-renderText({"<font size=4><ul><li>SampleID: automaticaly parsed from read names: do not modify.</li><li>Group: assign samples to Control and Treatment groups. Leave NA for samples you would like to exclude from the analysis.</li><li>Merge: select a Sample ID under which you would like to merge fastq files. Leave NA if not needed.</li><li>Read1: for your information, the identity of the read file. Only 1 of the 2 paired end files will be listed.</li></ul></font>"})
                    }
               
