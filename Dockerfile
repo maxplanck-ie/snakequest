@@ -1,27 +1,26 @@
 FROM centos:7.2.1511
 
+MAINTAINER Thomas Manke, manke@ie-freiburg.mpg.de
+
 RUN yum install -y epel-release && \
-    yum install -y R-3.5.2-2.el7.x86_64 wget nano vim-X11 vim-common vim-enhanced vim-minimal ypbind yp-tools ypserv autofs nfs-utils rsyslog && \
-    yum install -y openssl-devel curl libcurl-devel mesa-libGLU libpng-devel cairo-devel php  && \
-    mkdir /data && \
-    mkdir /etc/automount && \
-    R -e "install.packages(c('shiny','crosstalk','rmarkdown'), repos='https://cran.rstudio.com/',dependencies=TRUE)" 
+    yum install -y wget ypbind yp-tools ypserv autofs nfs-utils rsyslog && \
+    yum install -y openssl-devel curl libcurl-devel mesa-libGLU libpng-devel cairo-devel php && \
+    yum install -y R-3.6.0-1.el7.x86_64 && \
+    yum clean all && \
+    R -e 'install.packages(c("shiny","shinydashboard","shinyBS","rhandsontable","reshape2","sendmailR"), repos="https://cran.rstudio.com/",dependencies=TRUE, clean=TRUE)'
 
 # Fix the time zone
 RUN unlink /etc/localtime && \
     ln -s /usr/share/zoneinfo/Europe/Berlin /etc/localtime
 
-ADD ./mounts.py /usr/local/bin/mounts.py
-ADD ./startup.sh /usr/local/bin/startup.sh
+RUN mkdir /data /root/snakequest /etc/automount
+
+COPY ./mounts.py /usr/local/bin/mounts.py
+COPY ./startup.sh /usr/local/bin/startup.sh
+COPY app.R /root/snakequest
+COPY Rprofile.site /usr/lib/R/etc/
 
 VOLUME ["/export/"]
-
-RUN mkdir /root/snakequest
-#COPY ui.R /root/snakequest
-#COPY server.R /root/snakequest
-COPY app.R /root/snakequest
-
-COPY Rprofile.site /usr/lib/R/etc/
 
 EXPOSE 2525
 
