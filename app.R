@@ -1,18 +1,21 @@
+
 ## app.R ##
 #Rlib="/data/manke/sikora/shiny_apps/Rlibs3.5.0_bioc3.7"
 Rlib="/rstudio/galaxy/.rstudio/R/x86_64-pc-linux-gnu-library/3.6"
 .libPaths(Rlib)
-
 library(shiny)
-library(shinydashboard,lib.loc=Rlib)
+library(shinydashboard)
 library(rhandsontable)
 library(shinyBS)
+library(shinyalert)
+
 
 ui <- function(request) {dashboardPage(
     dashboardHeader(title = "Dataset selection"),
     ## Sidebar content
     dashboardSidebar(
 
+	useShinyalert(),
         selectInput(inputId="selectworkflow",label="Select NGS workflow",choices=c("PLEASE SELECT WORKFLOW","ATAC-seq","ChIP-seq","DNA-mapping","HiC","mRNA-seq","noncoding-RNA-seq","WGBS","scRNAseq")),
         textInput(inputId="analysistitle", label="Analysis title", value = "", width = NULL, placeholder = NULL),
         selectInput(inputId="genome", label="Select organism", choices=c("PLEASE SELECT A GENOME","Zebrafish [zv10]","Fission yeast","Fruitfly [dm6]","Fruitfly [dm3]","Human [hg37]","Human [hg38]","Mouse [mm9]","Mouse [mm10]"), selected = NULL),
@@ -133,6 +136,7 @@ server <- function(input, output, session) {
         dsel<-c("fastq.gz"="Project","bam"="Analysis")
         psel<-c("fastq.gz"="*fastq.gz$","bam"="*.bam$") 
         inFormat<-isolate(input$selectformat)
+	shinyalert("SEARCH IN PROGRESS", "Depending on the number of your files, this may take some time.", type = "success")
         
         if((input$group!="")&(input$owner!="")&(input$projectid!="")&(input$pathtodata=="")){
             inGroup<-isolate(input$group)
@@ -140,7 +144,7 @@ server <- function(input, output, session) {
             inProjectID<-isolate(input$projectid)
 
 
-            values$datdir<-c(values$datdir,system(sprintf("find /data/%s/sequencing_data* -name %s_%s_%s_%s -type d -a -not -path /data/%s/sequencing_data*/OxfordNanopore -prune | sort",tolower(gsub("-.+","",inGroup)),dsel[inFormat],inProjectID,inOwner,inGroup,tolower(gsub("-.+","",inGroup))),intern=TRUE)) 
+            values$datdir<-c(values$datdir,system(sprintf("find /data/%s/sequencing_data* -name %s_%s_%s_%s -type d -maxdepth 2 -a -not -path /data/%s/sequencing_data*/OxfordNanopore -prune | sort",tolower(gsub("-.+","",inGroup)),dsel[inFormat],inProjectID,inOwner,inGroup,tolower(gsub("-.+","",inGroup))),intern=TRUE)) 
             
         }
             
