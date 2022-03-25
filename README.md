@@ -1,4 +1,4 @@
-# userIN_to_yaml
+# snakeQuest
 A shiny app that collects user input required for running snakepipes.
 
 User input is used to create a)sample sheet (tsv) containing group information on the samples b)a shell script with the snakemake command c)a samples.yaml file with chip_dict if ChIPseq analysis is requested.
